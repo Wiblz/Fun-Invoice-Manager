@@ -1,0 +1,45 @@
+package storage
+
+import (
+	"errors"
+	"gorm.io/driver/sqlite"
+	"gorm.io/gorm"
+	"main/model"
+)
+
+type Manager struct {
+	DB *gorm.DB
+}
+
+func newSQLiteManager(file string) (*gorm.DB, error) {
+	db, err := gorm.Open(sqlite.Open(file), &gorm.Config{})
+	if err != nil {
+		return nil, err
+	}
+
+	err = db.AutoMigrate(&model.Invoice{})
+	if err != nil {
+		return nil, err
+	}
+
+	return db, nil
+}
+
+func NewManagerOfType(managerType string, args ...string) (*Manager, error) {
+	var db *gorm.DB
+	var err error
+	switch managerType {
+	case "sqlite":
+		if len(args) != 1 {
+			return nil, errors.New("sqlite storage manager requires exactly one argument")
+		}
+		db, err = newSQLiteManager(args[0])
+		if err != nil {
+			return nil, err
+		}
+	default:
+		return nil, errors.New("unknown storage manager type")
+	}
+
+	return &Manager{DB: db}, nil
+}
