@@ -7,5 +7,5 @@ type Invoice struct {
 	InvoiceDate      string `json:"invoiceDate"`
 	InvoiceAmount    string `json:"invoiceAmount"`
 	IsPaid           bool   `json:"isPaid"`
-	IsViewed         bool   `json:"isViewed"`
+	IsReviewed       bool   `json:"isViewed"`
 }

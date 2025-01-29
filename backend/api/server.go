@@ -19,8 +19,9 @@ func NewServer(storageManager *storage.Manager) *Server {
 
 	r := mux.NewRouter()
 	apiRouter := r.PathPrefix("/api/v1").Subrouter()
-	apiRouter.HandleFunc("/", s.HandleHome()).Methods("GET")
 	apiRouter.HandleFunc("/invoices", s.GetAllInvoicesHandler).Methods("GET")
+	apiRouter.HandleFunc("/invoice/{hash}/review-status", s.SetReviewedStatus).Methods("PATCH")
+	apiRouter.HandleFunc("/invoice/{hash}/payment-status", s.SetPaidStatus).Methods("PATCH")
 	//apiRouter.HandleFunc("/invoice/{hash}", GetInvoiceFileHandler).Methods("GET")
 
 	s.R = r
