@@ -2,9 +2,9 @@ package storage
 
 import (
 	"errors"
+	"github.com/Wiblz/Fun-Invoice-Manager/backend/model"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
-	"main/model"
 )
 
 type Manager struct {

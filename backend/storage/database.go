@@ -1,6 +1,6 @@
 package storage
 
-import "main/model"
+import "github.com/Wiblz/Fun-Invoice-Manager/backend/model"
 
 func (m *Manager) GetInvoiceByHash(hash string) (*model.Invoice, error) {
 	var invoice model.Invoice

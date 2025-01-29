@@ -6,8 +6,8 @@ import (
 	"os/signal"
 	"syscall"
 
-	"main/api"
-	"main/storage"
+	"github.com/Wiblz/Fun-Invoice-Manager/backend/api"
+	"github.com/Wiblz/Fun-Invoice-Manager/backend/storage"
 )
 
 func main() {
