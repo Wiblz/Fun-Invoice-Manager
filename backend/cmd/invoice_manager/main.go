@@ -2,7 +2,6 @@ package main
 
 import (
 	"log"
-	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
@@ -18,15 +17,7 @@ func main() {
 	}
 
 	s := api.NewServer(storageManager)
-
-	// TODO: Move to a Server method
-	go func() {
-		log.Printf("Server is running at :8080", err)
-		err := http.ListenAndServe(":8080", s.R)
-		if err != nil {
-			log.Printf("Server returned an error: %v", err)
-		}
-	}()
+	go s.Run()
 
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)

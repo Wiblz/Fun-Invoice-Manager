@@ -2,12 +2,22 @@ package api
 
 import (
 	"github.com/gorilla/mux"
+	"log"
 	"main/storage"
+	"net/http"
 )
 
 type Server struct {
 	storageManager *storage.Manager
-	R              *mux.Router
+	router         *mux.Router
+}
+
+func (s *Server) Run() {
+	log.Printf("Server is running at :8080")
+	err := http.ListenAndServe(":8080", s.router)
+	if err != nil {
+		log.Printf("Server returned an error: %v", err)
+	}
 }
 
 func (s *Server) Shutdown() error {
@@ -24,6 +34,6 @@ func NewServer(storageManager *storage.Manager) *Server {
 	apiRouter.HandleFunc("/invoice/{hash}/payment-status", s.SetPaidStatus).Methods("PATCH")
 	//apiRouter.HandleFunc("/invoice/{hash}", GetInvoiceFileHandler).Methods("GET")
 
-	s.R = r
+	s.router = r
 	return s
 }
