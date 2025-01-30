@@ -1,4 +1,4 @@
-package storage
+package db
 
 import "github.com/Wiblz/Fun-Invoice-Manager/backend/model"
 

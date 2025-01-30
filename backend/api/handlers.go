@@ -24,7 +24,10 @@ func (s *Server) GetAllInvoicesHandler(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) SetReviewedStatus(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	hash := vars["hash"] // It is guaranteed to be present by the router
+	hash, present := vars["hash"]
+	if !present {
+		w.WriteHeader(http.StatusBadRequest)
+	}
 
 	invoice, err := s.storageManager.GetInvoiceByHash(hash)
 	if err != nil {
@@ -53,7 +56,10 @@ func (s *Server) SetReviewedStatus(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) SetPaidStatus(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	hash := vars["hash"] // It is guaranteed to be present by the router
+	hash, present := vars["hash"]
+	if !present {
+		w.WriteHeader(http.StatusBadRequest)
+	}
 
 	invoice, err := s.storageManager.GetInvoiceByHash(hash)
 	if err != nil {
@@ -80,14 +86,19 @@ func (s *Server) SetPaidStatus(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
-//func GetInvoiceFileHandler(w http.ResponseWriter, r *http.Request) {
-//	vars := mux.Vars(r)
-//	hash, present := vars["hash"]
-//	if !present {
-//		w.WriteHeader(http.StatusBadRequest)
-//	}
-//
-//	// Get the invoice file from the storage manager
-//	// and write it to the response writer
-//
-//}
+func (s *Server) GetInvoiceFileHandler(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	hash, present := vars["hash"]
+	if !present {
+		w.WriteHeader(http.StatusBadRequest)
+	}
+
+	fileURL, err := s.filestoreClient.GetFileLink(r.Context(), hash)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	urlBytes, err := json.Marshal(fileURL)
+	w.Write(urlBytes)
+}

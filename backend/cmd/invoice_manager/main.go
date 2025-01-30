@@ -1,22 +1,40 @@
 package main
 
 import (
+	"github.com/Wiblz/Fun-Invoice-Manager/backend/storage/db"
+	"github.com/Wiblz/Fun-Invoice-Manager/backend/storage/filestore"
 	"log"
 	"os"
 	"os/signal"
 	"syscall"
 
 	"github.com/Wiblz/Fun-Invoice-Manager/backend/api"
-	"github.com/Wiblz/Fun-Invoice-Manager/backend/storage"
+	"github.com/spf13/viper"
 )
 
 func main() {
-	storageManager, err := storage.NewManagerOfType("sqlite", "invoice.db")
+	config := viper.New()
+	config.SetConfigFile(".env")
+	err := config.ReadInConfig()
 	if err != nil {
-		panic(err)
+		log.Fatalf("Failed to read config: %v", err)
 	}
 
-	s := api.NewServer(storageManager)
+	if !config.IsSet("SQLITE_FILE") {
+		log.Fatalf("Missing required config: SQLITE_FILE")
+	}
+
+	storageManager, err := db.NewManagerOfType("sqlite", config.GetString("SQLITE_FILE"))
+	if err != nil {
+		log.Fatalf("Failed to create storage manager: %v", err)
+	}
+
+	filestoreClient, err := filestore.NewClient(config)
+	if err != nil {
+		log.Fatalf("Failed to create filestore client: %v", err)
+	}
+
+	s := api.NewServer(storageManager, filestoreClient)
 	go s.Run()
 
 	quit := make(chan os.Signal, 1)
@@ -28,4 +46,5 @@ func main() {
 		log.Printf("Failed to shutdown server properly: %v", err)
 	}
 	log.Println("Server exiting")
+	os.Exit(0)
 }

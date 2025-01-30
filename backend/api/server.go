@@ -1,15 +1,19 @@
 package api
 
 import (
-	"github.com/gorilla/mux"
+	"github.com/Wiblz/Fun-Invoice-Manager/backend/storage/filestore"
 	"log"
-	"main/storage"
 	"net/http"
+
+	"github.com/gorilla/mux"
+
+	"github.com/Wiblz/Fun-Invoice-Manager/backend/storage/db"
 )
 
 type Server struct {
-	storageManager *storage.Manager
-	router         *mux.Router
+	storageManager  *db.Manager
+	router          *mux.Router
+	filestoreClient *filestore.Client
 }
 
 func (s *Server) Run() {
@@ -24,15 +28,18 @@ func (s *Server) Shutdown() error {
 	return nil
 }
 
-func NewServer(storageManager *storage.Manager) *Server {
-	s := &Server{storageManager: storageManager}
+func NewServer(storageManager *db.Manager, filestoreClient *filestore.Client) *Server {
+	s := &Server{
+		storageManager:  storageManager,
+		filestoreClient: filestoreClient,
+	}
 
 	r := mux.NewRouter()
 	apiRouter := r.PathPrefix("/api/v1").Subrouter()
 	apiRouter.HandleFunc("/invoices", s.GetAllInvoicesHandler).Methods("GET")
 	apiRouter.HandleFunc("/invoice/{hash}/review-status", s.SetReviewedStatus).Methods("PATCH")
 	apiRouter.HandleFunc("/invoice/{hash}/payment-status", s.SetPaidStatus).Methods("PATCH")
-	//apiRouter.HandleFunc("/invoice/{hash}", GetInvoiceFileHandler).Methods("GET")
+	apiRouter.HandleFunc("/invoice/{hash}/file", s.GetInvoiceFileHandler).Methods("GET")
 
 	s.router = r
 	return s
