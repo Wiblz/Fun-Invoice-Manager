@@ -1,9 +1,18 @@
 package api
 
 import (
+	"crypto/sha256"
 	"encoding/json"
+	"fmt"
 	"github.com/gorilla/mux"
+	"io"
 	"net/http"
+	"path/filepath"
+)
+
+const (
+	// Max file size in bytes
+	maxFileSize = 10 * 1024 * 1024
 )
 
 func (s *Server) GetAllInvoicesHandler(w http.ResponseWriter, r *http.Request) {
@@ -99,6 +108,57 @@ func (s *Server) GetInvoiceFileHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	urlBytes, err := json.Marshal(fileURL)
+	urlBytes, err := json.Marshal(fileURL.String())
 	w.Write(urlBytes)
+}
+
+func (s *Server) FileUploadHandler(w http.ResponseWriter, r *http.Request) {
+	file, header, err := r.FormFile("invoice")
+	if err != nil {
+		fmt.Println(err)
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+	defer file.Close()
+
+	// Check if the file is a PDF
+	// Check if the file is not too big
+	if filepath.Ext(header.Filename) != ".pdf" ||
+		header.Size > maxFileSize {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	hash := sha256.New()
+	if _, err := io.Copy(hash, file); err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	filenames, err := s.filestoreClient.GetBucketFilenames(r.Context())
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	// Check if the file is not already uploaded, compare hash
+	filename := fmt.Sprintf("%v.pdf", fmt.Sprintf("%x", hash.Sum(nil)))
+	if _, present := filenames[filename]; present {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	_, err = file.Seek(0, io.SeekStart)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	// Upload the file to the filestore
+	err = s.filestoreClient.PutFile(r.Context(), filename, file)
+	if err != nil {
+		fmt.Println(err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
 }
