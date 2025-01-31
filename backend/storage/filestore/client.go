@@ -11,6 +11,10 @@ import (
 	"time"
 )
 
+const (
+	defaultBucket = "invoices"
+)
+
 type Client struct {
 	minioClient *minio.Client
 	bucket      string
@@ -19,8 +23,7 @@ type Client struct {
 func NewClient(config *viper.Viper) (*Client, error) {
 	if !config.IsSet("MINIO_ENDPOINT") ||
 		!config.IsSet("MINIO_ACCESS_KEY") ||
-		!config.IsSet("MINIO_SECRET_KEY") ||
-		!config.IsSet("MINIO_BUCKET") {
+		!config.IsSet("MINIO_SECRET_KEY") {
 		return nil, errors.New("missing required config for filestore client")
 	}
 
@@ -32,9 +35,14 @@ func NewClient(config *viper.Viper) (*Client, error) {
 		return nil, err
 	}
 
+	bucket := config.GetString("MINIO_BUCKET")
+	if bucket == "" {
+		bucket = defaultBucket
+	}
+
 	return &Client{
 		minioClient: minioClient,
-		bucket:      config.GetString("MINIO_BUCKET"),
+		bucket:      bucket,
 	}, nil
 }
 
@@ -51,6 +59,10 @@ func (c *Client) GetBucketFilenames(ctx context.Context) (filenames map[string]s
 	objectsChannel := c.minioClient.ListObjects(ctx, c.bucket, minio.ListObjectsOptions{})
 	filenames = make(map[string]struct{})
 	for object := range objectsChannel {
+		if object.Err != nil {
+			err = object.Err
+			continue
+		}
 		filenames[object.Key] = struct{}{}
 	}
 	return

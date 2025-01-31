@@ -12,6 +12,10 @@ import (
 	"github.com/spf13/viper"
 )
 
+const (
+	defaultSQLiteFile = "invoice.db"
+)
+
 func main() {
 	config := viper.New()
 	config.SetConfigFile(".env")
@@ -20,8 +24,9 @@ func main() {
 		log.Fatalf("Failed to read config: %v", err)
 	}
 
-	if !config.IsSet("SQLITE_FILE") {
-		log.Fatalf("Missing required config: SQLITE_FILE")
+	sqliteFile := config.GetString("SQLITE_FILE")
+	if sqliteFile == "" {
+		config.Set("SQLITE_FILE", defaultSQLiteFile)
 	}
 
 	storageManager, err := db.NewManagerOfType("sqlite", config.GetString("SQLITE_FILE"))
