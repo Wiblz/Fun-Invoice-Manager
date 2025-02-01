@@ -26,11 +26,17 @@ func (m *Manager) GetAllInvoices() ([]*model.Invoice, error) {
 	return m.GetInvoices(0, -1)
 }
 
-func (m *Manager) UpdateInvoice(invoice *model.Invoice) error {
+func (m *Manager) UpsertInvoice(invoice *model.Invoice) error {
 	result := m.DB.Save(invoice)
 	if result.Error != nil {
 		return result.Error
 	}
 
 	return nil
+}
+
+// UpdateInvoice updates the invoice in the database
+// It is an alias for UpsertInvoice, as it achieves the same effect
+func (m *Manager) UpdateInvoice(invoice *model.Invoice) error {
+	return m.UpsertInvoice(invoice)
 }

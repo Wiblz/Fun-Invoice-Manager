@@ -4,10 +4,14 @@ import (
 	"crypto/sha256"
 	"encoding/json"
 	"fmt"
+	"github.com/Wiblz/Fun-Invoice-Manager/backend/model"
 	"github.com/gorilla/mux"
 	"io"
+	"log"
 	"net/http"
 	"path/filepath"
+	"strconv"
+	"time"
 )
 
 const (
@@ -115,7 +119,7 @@ func (s *Server) GetInvoiceFileHandler(w http.ResponseWriter, r *http.Request) {
 func (s *Server) FileUploadHandler(w http.ResponseWriter, r *http.Request) {
 	file, header, err := r.FormFile("invoice")
 	if err != nil {
-		fmt.Println(err)
+		log.Println(err)
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
@@ -125,18 +129,21 @@ func (s *Server) FileUploadHandler(w http.ResponseWriter, r *http.Request) {
 	// Check if the file is not too big
 	if filepath.Ext(header.Filename) != ".pdf" ||
 		header.Size > maxFileSize {
+		log.Println("Invalid file")
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
 	hash := sha256.New()
 	if _, err := io.Copy(hash, file); err != nil {
+		log.Println(err)
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
 	filenames, err := s.filestoreClient.GetBucketFilenames(r.Context())
 	if err != nil {
+		log.Println(err)
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
@@ -144,12 +151,14 @@ func (s *Server) FileUploadHandler(w http.ResponseWriter, r *http.Request) {
 	// Check if the file is not already uploaded, compare hash
 	filename := fmt.Sprintf("%v.pdf", fmt.Sprintf("%x", hash.Sum(nil)))
 	if _, present := filenames[filename]; present {
-		w.WriteHeader(http.StatusBadRequest)
+		log.Println("File already uploaded")
+		w.WriteHeader(http.StatusConflict)
 		return
 	}
 
 	_, err = file.Seek(0, io.SeekStart)
 	if err != nil {
+		log.Println(err)
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
@@ -157,7 +166,59 @@ func (s *Server) FileUploadHandler(w http.ResponseWriter, r *http.Request) {
 	// Upload the file to the filestore
 	err = s.filestoreClient.PutFile(r.Context(), filename, file)
 	if err != nil {
-		fmt.Println(err)
+		log.Println(err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	log.Printf("Form data: %v\n", r.Form)
+
+	// it's fine if id is not present
+	var id *string
+	idStr := r.FormValue("id")
+	if idStr != "" {
+		id = &idStr
+	}
+
+	var invoiceDate *time.Time
+	if dateStr := r.FormValue("date"); dateStr != "" {
+		date, err := time.Parse("2006-01-02", dateStr)
+		if err == nil {
+			invoiceDate = &date
+		} else {
+			log.Printf("could not parse date: %v", err)
+		}
+	}
+
+	amount, err := strconv.ParseFloat(r.FormValue("amount"), 64)
+	if err != nil {
+		amount = 0.0
+	}
+
+	isPaid, err := strconv.ParseBool(r.FormValue("isPaid"))
+	if err != nil {
+		log.Printf("could not parse isPaid: %v, setting to false", err)
+		isPaid = false
+	}
+
+	isReviewed, err := strconv.ParseBool(r.FormValue("isReviewed"))
+	if err != nil {
+		log.Printf("could not parse isReviewed: %v, setting to false", err)
+		isReviewed = false
+	}
+
+	invoice := &model.Invoice{
+		FileHash:         fmt.Sprintf("%x", hash.Sum(nil)),
+		OriginalFileName: header.Filename,
+		ID:               id,
+		Date:             invoiceDate,
+		Amount:           &amount,
+		IsPaid:           isPaid,
+		IsReviewed:       isReviewed,
+	}
+
+	err = s.storageManager.UpsertInvoice(invoice)
+	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
