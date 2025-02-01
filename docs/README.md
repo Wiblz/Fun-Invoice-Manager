@@ -12,3 +12,12 @@ However, the server doesn't have to store the file. After initial validation/pro
 Eventually, I ended up going with the second approach. I don't see any other way to use a hash as a filename and avoiding trusting the client at the same time.
 Considering that additional file processing is expected (extracting metadata, raw text, perhaps extracting some data with OCR or LLM), there's no avoiding uploading the file to our backend.
 I am still using self-hosted minio server for file storage, and a minio client for file uploads. This makes it easy to switch to an actual S3 in production if needed.
+
+# Preventing duplicate uploads
+There is a possible shortcut for checking if a file being uploaded is a duplicate.
+The hash of the file can be calculated and checked against the database. If the hash is already present in the database, the file is a duplicate and can be discarded.
+This is saving us from needing to request the file storage to make a duplicate check.
+
+This, however, opens a possibility for a file storage to go out of sync with the database. If a file is uploaded, but the database is not updated, the file will bit be considered a duplicate on the next upload.
+At the same time, if, for whatever reason the file is deleted from the storage, but the database is not updated, the file will be considered a duplicate on the next upload.
+These edge cases could be pretty rare, but in the end I decided to go with the "safe" approach and always query the file storage for duplicates. This still does not prevent possible desyncs, but at least it makes the file storage the single source of truth.
