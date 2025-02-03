@@ -47,3 +47,16 @@ Create a `.env` file in the `backend` directory with the following variables set
 ## Usage
   The backend server will be running at http://localhost:8080.  
   The frontend development server will be running at http://localhost:3000.
+
+# Development thoughts
+Thoughts and considerations during the development process can be found [[here](https://github.com/Wiblz/Fun-Invoice-Manager/blob/main/docs/README.md)].
+
+# TODO
+## Backend
+- [ ] Extract raw text from PDF files
+- [ ] Add logs and log rotation
+- [ ] Dockerize the backend server
+- [ ] Research a way to automate the file storage setup
+## Frontend
+- [ ] Validate file upload form
+- [ ] Style toasts and add more detailed messages
