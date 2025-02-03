@@ -106,7 +106,7 @@ func (s *Server) GetInvoiceFileHandler(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusBadRequest)
 	}
 
-	fileURL, err := s.filestoreClient.GetFileLink(r.Context(), hash)
+	fileURL, err := s.filestoreClient.GetFileLink(r.Context(), hash+".pdf")
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return

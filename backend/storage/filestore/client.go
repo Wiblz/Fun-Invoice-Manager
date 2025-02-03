@@ -51,7 +51,9 @@ func (c *Client) GetFileLink(ctx context.Context, object string) (*url.URL, erro
 }
 
 func (c *Client) PutFile(ctx context.Context, object string, reader io.Reader) error {
-	_, err := c.minioClient.PutObject(ctx, c.bucket, object, reader, -1, minio.PutObjectOptions{})
+	_, err := c.minioClient.PutObject(ctx, c.bucket, object, reader, -1, minio.PutObjectOptions{
+		ContentType: "application/pdf",
+	})
 	return err
 }
 

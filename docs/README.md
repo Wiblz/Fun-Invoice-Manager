@@ -13,6 +13,9 @@ Eventually, I ended up going with the second approach. I don't see any other way
 Considering that additional file processing is expected (extracting metadata, raw text, perhaps extracting some data with OCR or LLM), there's no avoiding uploading the file to our backend.
 I am still using self-hosted minio server for file storage, and a minio client for file uploads. This makes it easy to switch to an actual S3 in production if needed.
 
+## Content-Type
+Turns out, MinIO (as well as S3) will serve the stored files with the same content-type as the one provided during the upload. `application/octet-stream` is used by default, which prevents PDFs from being embedded in the browser. This can be fixed by explicitly setting the content-type to `application/pdf` during the upload.
+
 # Preventing duplicate uploads
 There is a possible shortcut for checking if a file being uploaded is a duplicate.
 The hash of the file can be calculated and checked against the database. If the hash is already present in the database, the file is a duplicate and can be discarded.
