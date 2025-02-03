@@ -9,5 +9,5 @@ type Invoice struct {
 	Date             *time.Time `json:"date"`
 	Amount           *float64   `json:"amount"`
 	IsPaid           bool       `json:"isPaid"`
-	IsReviewed       bool       `json:"isViewed"`
+	IsReviewed       bool       `json:"isReviewed"`
 }

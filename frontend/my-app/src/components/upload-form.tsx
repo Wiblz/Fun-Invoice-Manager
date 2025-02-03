@@ -15,7 +15,7 @@ export default function UploadForm() {
   const [uploading, setUploading] = useState(false)
   const [progress, setProgress] = useState(0)
   const [file, setFile] = useState<File | null>(null)
-  const [state, formAction, _] = useActionState(uploadInvoice, {message: ''})
+  const [state, formAction, _] = useActionState(uploadInvoice, null)
   const {toast} = useToast()
 
   useEffect(() => {

@@ -9,12 +9,13 @@ import {Button} from "@/components/ui/button";
 import {Upload} from "lucide-react";
 import PdfViewer from "@/components/pdf-viewer";
 import {useState} from "react";
+import {setInvoicePaymentStatus} from "@/app/actions";
 
 export default function InvoiceList({invoices}: { invoices: Invoice[] }) {
   const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
 
   return (
-    <div className="container mx-auto p-4 flex gap-8">
+    <div className="container mx-auto p-4 flex">
       {/* Invoice List Section */}
       <div className="flex-1">
         <Card className="mb-8">
@@ -33,17 +34,17 @@ export default function InvoiceList({invoices}: { invoices: Invoice[] }) {
             <Table>
               <TableHeader>
                 <TableRow>
+                  <TableHead>Reviewed</TableHead>
                   <TableHead>Invoice Number</TableHead>
                   <TableHead>Date</TableHead>
-                  <TableHead>Supplier</TableHead>
+                  <TableHead>File</TableHead>
                   <TableHead>Amount</TableHead>
                   <TableHead>Status</TableHead>
-                  <TableHead>Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {invoices.map((invoice) => (
-                  <InvoiceRow key={invoice.fileHash} invoice={invoice} onView={() => {
+                  <InvoiceRow key={invoice.fileHash} invoice={invoice} onView={async () => {
                     setSelectedInvoice(invoice);
                   }}/>
                 ))}
@@ -55,7 +56,7 @@ export default function InvoiceList({invoices}: { invoices: Invoice[] }) {
 
       {/* PDF Viewer Section */}
       {selectedInvoice && (
-        <div className="w-1/3">
+        <div className="w-1/3 shrink-0 grow-1 h-screen">
           <PdfViewer fileName={selectedInvoice.fileHash} onClose={() => {
             setSelectedInvoice(null);
           }}/>

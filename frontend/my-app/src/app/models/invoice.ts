@@ -5,5 +5,5 @@ export default interface Invoice {
   date: string;
   amount: string;
   isPaid: boolean;
-  isViewed: boolean;
+  isReviewed: boolean;
 }
