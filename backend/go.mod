@@ -3,6 +3,7 @@ module github.com/Wiblz/Fun-Invoice-Manager/backend
 go 1.22.0
 
 require (
+	github.com/gen2brain/go-fitz v1.24.14
 	github.com/gorilla/mux v1.8.1
 	github.com/minio/minio-go/v7 v7.0.84
 	github.com/spf13/viper v1.19.0
@@ -14,6 +15,7 @@ require (
 
 require (
 	github.com/dustin/go-humanize v1.0.1 // indirect
+	github.com/ebitengine/purego v0.8.0 // indirect
 	github.com/fsnotify/fsnotify v1.7.0 // indirect
 	github.com/go-ini/ini v1.67.0 // indirect
 	github.com/goccy/go-json v0.10.4 // indirect
@@ -21,6 +23,7 @@ require (
 	github.com/hashicorp/hcl v1.0.0 // indirect
 	github.com/jinzhu/inflection v1.0.0 // indirect
 	github.com/jinzhu/now v1.1.5 // indirect
+	github.com/jupiterrider/ffi v0.2.0 // indirect
 	github.com/klauspost/compress v1.17.11 // indirect
 	github.com/klauspost/cpuid/v2 v2.2.9 // indirect
 	github.com/magiconair/properties v1.8.7 // indirect

@@ -29,7 +29,7 @@ docker run \
 - Set up environment variables:  
 Create a `.env` file in the `backend` directory with the following variables set:  
   - `SQLITE_FILE` - SQLite database filename, defaults to `invoice.db`
-  - `LOG_PATH` - Log file path, defaults to `/var/logs/invoice.log`
+  - `LOG_PATH` - Log file path, defaults to `../logs/invoice.log` (relative to the `backend` directory)
   - `MINIO_ENDPOINT` - MinIO server endpoint, must be set
   - `MINIO_ACCESS_KEY` - MinIO server access key, must be set.
   - `MINIO_SECRET_KEY` - MinIO server secret key, must be set

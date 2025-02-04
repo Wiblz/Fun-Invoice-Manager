@@ -10,4 +10,5 @@ type Invoice struct {
 	Amount           *float64   `json:"amount"`
 	IsPaid           bool       `json:"isPaid"`
 	IsReviewed       bool       `json:"isReviewed"`
+	RawText          string     `json:"-"`
 }

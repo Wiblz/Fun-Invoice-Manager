@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/Wiblz/Fun-Invoice-Manager/backend/model"
+	"github.com/gen2brain/go-fitz"
 	"github.com/gorilla/mux"
 	"go.uber.org/zap"
 	"io"
@@ -189,6 +190,31 @@ func (s *Server) FileUploadHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Reset file pointer for text extraction
+	_, err = file.Seek(0, io.SeekStart)
+	if err != nil {
+		s.logger.Error("Failed to reset file pointer", zap.Error(err))
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	// Extract text from the PDF
+	doc, err := fitz.NewFromReader(file)
+	if err != nil {
+		s.logger.Warn("Failed to open PDF file for text extraction", zap.String("filename", header.Filename), zap.Error(err))
+	}
+
+	var text string
+	for i := 0; i < doc.NumPage(); i++ {
+		pageText, err := doc.Text(i)
+		if err != nil {
+			s.logger.Warn("Failed to extract text from PDF page", zap.Int("page", i), zap.String("filename", header.Filename), zap.Error(err))
+			continue
+		}
+
+		text += pageText
+	}
+
 	// it's fine if id is not present
 	var id *string
 	idStr := r.FormValue("id")
@@ -231,6 +257,7 @@ func (s *Server) FileUploadHandler(w http.ResponseWriter, r *http.Request) {
 		Amount:           &amount,
 		IsPaid:           isPaid,
 		IsReviewed:       isReviewed,
+		RawText:          text,
 	}
 
 	err = s.storageManager.UpsertInvoice(invoice)
