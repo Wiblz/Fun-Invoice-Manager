@@ -1,6 +1,6 @@
 "use client";
 
-import {Table, TableBody, TableHead, TableHeader, TableRow} from "@/components/ui/table";
+import {Table, TableBody, TableCell, TableHead, TableHeader, TableRow} from "@/components/ui/table";
 import InvoiceRow from "@/components/invoice-row";
 import type Invoice from "@/app/models/invoice";
 import {Card, CardContent, CardHeader} from "@/components/ui/card";
@@ -9,7 +9,6 @@ import {Button} from "@/components/ui/button";
 import {Upload} from "lucide-react";
 import PdfViewer from "@/components/pdf-viewer";
 import {useState} from "react";
-import {setInvoicePaymentStatus} from "@/app/actions";
 
 export default function InvoiceList({invoices}: { invoices: Invoice[] }) {
   const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
@@ -43,11 +42,16 @@ export default function InvoiceList({invoices}: { invoices: Invoice[] }) {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {invoices.map((invoice) => (
+                {invoices?.length ?
+                  invoices.map((invoice) => (
                   <InvoiceRow key={invoice.fileHash} invoice={invoice} onView={async () => {
                     setSelectedInvoice(invoice);
                   }}/>
-                ))}
+                )) :
+                  <TableRow className="text-center text-muted-foreground text-lg">
+                    <TableCell colSpan={6}>No invoices found</TableCell>
+                  </TableRow>
+                }
               </TableBody>
             </Table>
           </CardContent>

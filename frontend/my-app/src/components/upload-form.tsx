@@ -3,8 +3,7 @@
 import {useActionState, useEffect, useState} from "react";
 import {Button} from "@/components/ui/button";
 import {useToast} from "@/hooks/use-toast";
-import {FileCheck, Loader2, Upload, X} from "lucide-react";
-import {Progress} from "@/components/ui/progress";
+import {FileCheck, Upload, X} from "lucide-react";
 import {Input} from "@/components/ui/input";
 import {Switch} from "@/components/ui/switch";
 import Form from "next/form";
@@ -12,23 +11,20 @@ import {uploadInvoice} from "@/app/actions";
 import {Label} from "@/components/ui/label";
 
 export default function UploadForm() {
-  const [uploading, setUploading] = useState(false)
-  const [progress, setProgress] = useState(0)
   const [file, setFile] = useState<File | null>(null)
   const [state, formAction, _] = useActionState(uploadInvoice, null)
   const {toast} = useToast()
 
   useEffect(() => {
-    console.log("state", state);
     if (!state) return
     toast({
       title: state.message,
-      variant: 'destructive',
+      variant: 'error',
       description: state?.details
     })
   }, [state]);
 
-  const handleFileChange = (e) => {
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
       setFile(file);
@@ -47,16 +43,11 @@ export default function UploadForm() {
       <div className="space-y-4">
         <Button
           type="button"
-          disabled={uploading}
           className="flex items-center gap-2"
           onClick={() => document.getElementById('fileInput')?.click()}
         >
-          {uploading ? (
-            <Loader2 className="w-4 h-4 animate-spin"/>
-          ) : (
-            <Upload className="w-4 h-4"/>
-          )}
-          {uploading ? 'Uploading...' : 'Upload Invoice'}
+          <Upload className="w-4 h-4"/>
+          Upload Invoice
         </Button>
 
         <input
@@ -79,15 +70,6 @@ export default function UploadForm() {
             >
               <X className="w-4 h-4 text-gray-500"/>
             </button>
-          </div>
-        )}
-
-        {uploading && (
-          <div className="space-y-2">
-            <Progress value={progress}/>
-            <p className="text-sm text-gray-500">
-              {Math.round(progress)}% uploaded
-            </p>
           </div>
         )}
       </div>
