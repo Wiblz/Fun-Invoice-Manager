@@ -55,10 +55,10 @@ Thoughts and considerations during the development process can be found [[here](
 
 # TODO
 ## Backend
-- [ ] Extract raw text from PDF files
-- [ ] Add logs and log rotation
+- [x] Extract raw text from PDF files
+- [x] Add logs and log rotation
 - [ ] Dockerize the backend server
 - [ ] Research a way to automate the file storage setup
 ## Frontend
 - [ ] Validate file upload form
-- [ ] Style toasts and add more detailed messages
+- [x] Style toasts and add more detailed messages
