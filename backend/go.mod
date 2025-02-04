@@ -6,6 +6,8 @@ require (
 	github.com/gorilla/mux v1.8.1
 	github.com/minio/minio-go/v7 v7.0.84
 	github.com/spf13/viper v1.19.0
+	go.uber.org/zap v1.21.0
+	gopkg.in/natefinch/lumberjack.v2 v2.2.1
 	gorm.io/driver/sqlite v1.5.7
 	gorm.io/gorm v1.25.12
 )

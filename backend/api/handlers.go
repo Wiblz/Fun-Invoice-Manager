@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"github.com/Wiblz/Fun-Invoice-Manager/backend/model"
 	"github.com/gorilla/mux"
+	"go.uber.org/zap"
 	"io"
-	"log"
 	"net/http"
 	"path/filepath"
 	"strconv"
@@ -22,15 +22,18 @@ const (
 func (s *Server) GetAllInvoicesHandler(w http.ResponseWriter, r *http.Request) {
 	invoices, err := s.storageManager.GetAllInvoices()
 	if err != nil {
+		s.logger.Error("Failed to retrieve all invoices from database", zap.Error(err))
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
 	jsonInvoices, err := json.Marshal(invoices)
 	if err != nil {
+		s.logger.Error("Failed to marshal invoices to JSON", zap.Error(err))
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
+
 	w.Header().Set("Content-Type", "application/json")
 	w.Write(jsonInvoices)
 }
@@ -39,11 +42,13 @@ func (s *Server) SetReviewedStatus(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	hash, present := vars["hash"]
 	if !present {
+		s.logger.Error("Hash path parameter is missing. This handler should not have been called, check the router", zap.String("path", r.URL.Path))
 		w.WriteHeader(http.StatusBadRequest)
 	}
 
 	invoice, err := s.storageManager.GetInvoiceByHash(hash)
 	if err != nil {
+		s.logger.Error("Failed to retrieve invoice from database", zap.String("hash", hash), zap.Error(err))
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
@@ -53,6 +58,7 @@ func (s *Server) SetReviewedStatus(w http.ResponseWriter, r *http.Request) {
 	}
 	err = json.NewDecoder(r.Body).Decode(&requestBody)
 	if err != nil {
+		s.logger.Warn("Failed to decode request body", zap.Error(err))
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
@@ -60,6 +66,7 @@ func (s *Server) SetReviewedStatus(w http.ResponseWriter, r *http.Request) {
 	invoice.IsReviewed = requestBody.IsReviewed
 	err = s.storageManager.UpdateInvoice(invoice)
 	if err != nil {
+		s.logger.Error("Failed to update invoice in database", zap.String("hash", hash), zap.Error(err))
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
@@ -71,11 +78,13 @@ func (s *Server) SetPaidStatus(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	hash, present := vars["hash"]
 	if !present {
+		s.logger.Error("Hash path parameter is missing. This handler should not have been called, check the router", zap.String("path", r.URL.Path))
 		w.WriteHeader(http.StatusBadRequest)
 	}
 
 	invoice, err := s.storageManager.GetInvoiceByHash(hash)
 	if err != nil {
+		s.logger.Error("Failed to retrieve invoice from database", zap.String("hash", hash), zap.Error(err))
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
@@ -85,6 +94,7 @@ func (s *Server) SetPaidStatus(w http.ResponseWriter, r *http.Request) {
 	}
 	err = json.NewDecoder(r.Body).Decode(&requestBody)
 	if err != nil {
+		s.logger.Warn("Failed to decode request body", zap.Error(err))
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
@@ -92,6 +102,7 @@ func (s *Server) SetPaidStatus(w http.ResponseWriter, r *http.Request) {
 	invoice.IsPaid = requestBody.IsPaid
 	err = s.storageManager.UpdateInvoice(invoice)
 	if err != nil {
+		s.logger.Error("Failed to update invoice in database", zap.String("hash", hash), zap.Error(err))
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
@@ -103,62 +114,69 @@ func (s *Server) GetInvoiceFileHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	hash, present := vars["hash"]
 	if !present {
+		s.logger.Error("Hash path parameter is missing. This handler should not have been called, check the router", zap.String("path", r.URL.Path))
 		w.WriteHeader(http.StatusBadRequest)
 	}
 
 	fileURL, err := s.filestoreClient.GetFileLink(r.Context(), hash+".pdf")
 	if err != nil {
+		s.logger.Error("Failed to get file link from filestore", zap.Error(err))
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
 	urlBytes, err := json.Marshal(fileURL.String())
+	if err != nil {
+		s.logger.Error("Failed to marshal file URL", zap.Error(err))
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
 	w.Write(urlBytes)
 }
 
 func (s *Server) FileUploadHandler(w http.ResponseWriter, r *http.Request) {
 	file, header, err := r.FormFile("invoice")
 	if err != nil {
-		log.Println(err)
+		s.logger.Warn("Failed to get file from form", zap.Error(err))
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 	defer file.Close()
 
-	// Check if the file is a PDF
-	// Check if the file is not too big
+	// Validate file type and size
 	if filepath.Ext(header.Filename) != ".pdf" ||
 		header.Size > maxFileSize {
-		log.Println("Invalid file")
+		s.logger.Warn("Invalid file type or size", zap.String("filename", header.Filename), zap.Int64("size", header.Size))
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
 	hash := sha256.New()
 	if _, err := io.Copy(hash, file); err != nil {
-		log.Println(err)
+		s.logger.Warn("Failed to compute file hash", zap.Error(err))
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
 	filenames, err := s.filestoreClient.GetBucketFilenames(r.Context())
 	if err != nil {
-		log.Println(err)
+		s.logger.Warn("Failed to fetch filenames from filestore", zap.Error(err))
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
 	// Check if the file is not already uploaded, compare hash
-	filename := fmt.Sprintf("%v.pdf", fmt.Sprintf("%x", hash.Sum(nil)))
+	filename := fmt.Sprintf("%x.pdf", hash.Sum(nil))
 	if _, present := filenames[filename]; present {
-		log.Println("File already uploaded")
+		s.logger.Warn("File already exists", zap.String("filename", filename))
 		w.WriteHeader(http.StatusConflict)
 		return
 	}
 
 	_, err = file.Seek(0, io.SeekStart)
 	if err != nil {
-		log.Println(err)
+		s.logger.Error("Failed to reset file pointer", zap.Error(err))
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
@@ -166,12 +184,10 @@ func (s *Server) FileUploadHandler(w http.ResponseWriter, r *http.Request) {
 	// Upload the file to the filestore
 	err = s.filestoreClient.PutFile(r.Context(), filename, file)
 	if err != nil {
-		log.Println(err)
+		s.logger.Error("Failed to upload file to filestore", zap.Error(err))
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
-
-	log.Printf("Form data: %v\n", r.Form)
 
 	// it's fine if id is not present
 	var id *string
@@ -186,7 +202,7 @@ func (s *Server) FileUploadHandler(w http.ResponseWriter, r *http.Request) {
 		if err == nil {
 			invoiceDate = &date
 		} else {
-			log.Printf("could not parse date: %v", err)
+			s.logger.Warn("Invalid date format", zap.String("date", dateStr), zap.Error(err))
 		}
 	}
 
@@ -197,13 +213,13 @@ func (s *Server) FileUploadHandler(w http.ResponseWriter, r *http.Request) {
 
 	isPaid, err := strconv.ParseBool(r.FormValue("isPaid"))
 	if err != nil {
-		log.Printf("could not parse isPaid: %v, setting to false", err)
+		s.logger.Warn("Invalid isPaid value", zap.String("isPaid", r.FormValue("isPaid")), zap.Error(err))
 		isPaid = false
 	}
 
 	isReviewed, err := strconv.ParseBool(r.FormValue("isReviewed"))
 	if err != nil {
-		log.Printf("could not parse isReviewed: %v, setting to false", err)
+		s.logger.Warn("Invalid isReviewed value", zap.String("isReviewed", r.FormValue("isReviewed")), zap.Error(err))
 		isReviewed = false
 	}
 
@@ -219,6 +235,7 @@ func (s *Server) FileUploadHandler(w http.ResponseWriter, r *http.Request) {
 
 	err = s.storageManager.UpsertInvoice(invoice)
 	if err != nil {
+		s.logger.Error("Failed to save invoice to database", zap.Error(err))
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}

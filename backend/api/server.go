@@ -1,8 +1,9 @@
 package api
 
 import (
+	"fmt"
 	"github.com/Wiblz/Fun-Invoice-Manager/backend/storage/filestore"
-	"log"
+	"go.uber.org/zap"
 	"net/http"
 	"time"
 
@@ -15,13 +16,15 @@ type Server struct {
 	storageManager  *db.Manager
 	router          *mux.Router
 	filestoreClient *filestore.Client
+
+	logger *zap.Logger
 }
 
 func (s *Server) Run() {
-	log.Printf("Server is running at :8080")
+	s.logger.Info("Server is running at :8080")
 	err := http.ListenAndServe(":8080", s.router)
 	if err != nil {
-		log.Printf("Server returned an error: %v", err)
+		s.logger.Error("Server returned an error", zap.Error(err))
 	}
 }
 
@@ -40,7 +43,7 @@ func (rw *responseWriter) WriteHeader(code int) {
 	rw.ResponseWriter.WriteHeader(code)
 }
 
-func loggingMiddleware(next http.Handler) http.Handler {
+func (s *Server) loggingMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()
 		ip := r.RemoteAddr
@@ -51,11 +54,12 @@ func loggingMiddleware(next http.Handler) http.Handler {
 		next.ServeHTTP(rw, r)
 
 		duration := time.Since(start)
-		log.Printf("[%s] %s - %v in %v (%s)", r.Method, r.URL.Path, rw.statusCode, duration, ip)
+
+		s.logger.Info(fmt.Sprintf("[%s] %s", r.Method, r.URL.Path), zap.Int("status", rw.statusCode), zap.Duration("duration", duration), zap.String("ip", ip))
 	})
 }
 
-func corsMiddleware(next http.Handler) http.Handler {
+func (s *Server) corsMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Set CORS headers
 		w.Header().Set("Access-Control-Allow-Origin", "http://localhost:3000")
@@ -64,9 +68,7 @@ func corsMiddleware(next http.Handler) http.Handler {
 		w.Header().Set("Access-Control-Allow-Credentials", "true")
 		w.Header().Set("Access-Control-Max-Age", "300")
 
-		// Handle preflight
 		if r.Method == http.MethodOptions {
-			log.Println("Handling OPTIONS request")
 			w.WriteHeader(http.StatusOK)
 			return
 		}
@@ -75,16 +77,17 @@ func corsMiddleware(next http.Handler) http.Handler {
 	})
 }
 
-func NewServer(storageManager *db.Manager, filestoreClient *filestore.Client) *Server {
+func NewServer(storageManager *db.Manager, filestoreClient *filestore.Client, logger *zap.Logger) *Server {
 	s := &Server{
 		storageManager:  storageManager,
 		filestoreClient: filestoreClient,
+		logger:          logger,
 	}
 
 	r := mux.NewRouter()
 	apiRouter := r.PathPrefix("/api/v1").Subrouter()
-	apiRouter.Use(corsMiddleware)
-	apiRouter.Use(loggingMiddleware)
+	apiRouter.Use(s.corsMiddleware)
+	apiRouter.Use(s.loggingMiddleware)
 	apiRouter.HandleFunc("/invoices", s.GetAllInvoicesHandler).Methods("GET")
 	apiRouter.HandleFunc("/invoice/{hash}/review-status", s.SetReviewedStatus).Methods("PATCH")
 	apiRouter.HandleFunc("/invoice/{hash}/payment-status", s.SetPaidStatus).Methods("PATCH")

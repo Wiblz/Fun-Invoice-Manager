@@ -29,10 +29,12 @@ docker run \
 - Set up environment variables:  
 Create a `.env` file in the `backend` directory with the following variables set:  
   - `SQLITE_FILE` - SQLite database filename, defaults to `invoice.db`
+  - `LOG_PATH` - Log file path, defaults to `/var/logs/invoice.log`
   - `MINIO_ENDPOINT` - MinIO server endpoint, must be set
   - `MINIO_ACCESS_KEY` - MinIO server access key, must be set.
   - `MINIO_SECRET_KEY` - MinIO server secret key, must be set
   - `MINIO_BUCKET` - Storage bucket name, defaults to `invoices`
+  - `PRODUCTION` - Set to `true` to enable production mode, defaults to `false`
 - Run the backend server:  
   `go run backend/api/server.go`
 

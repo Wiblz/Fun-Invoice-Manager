@@ -3,12 +3,14 @@ package db
 import (
 	"errors"
 	"github.com/Wiblz/Fun-Invoice-Manager/backend/model"
+	"go.uber.org/zap"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 )
 
 type Manager struct {
-	DB *gorm.DB
+	DB     *gorm.DB
+	logger *zap.Logger
 }
 
 func newSQLiteManager(file string) (*gorm.DB, error) {
@@ -25,7 +27,7 @@ func newSQLiteManager(file string) (*gorm.DB, error) {
 	return db, nil
 }
 
-func NewManagerOfType(managerType string, args ...string) (*Manager, error) {
+func NewManagerOfType(managerType string, logger *zap.Logger, args ...string) (*Manager, error) {
 	var db *gorm.DB
 	var err error
 	switch managerType {
@@ -41,5 +43,5 @@ func NewManagerOfType(managerType string, args ...string) (*Manager, error) {
 		return nil, errors.New("unknown storage manager type")
 	}
 
-	return &Manager{DB: db}, nil
+	return &Manager{DB: db, logger: logger}, nil
 }
