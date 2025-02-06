@@ -63,7 +63,7 @@ func (s *Server) corsMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Set CORS headers
 		w.Header().Set("Access-Control-Allow-Origin", "http://localhost:3000")
-		w.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE")
+		w.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, PATCH, DELETE")
 		w.Header().Set("Access-Control-Allow-Headers", "Accept, Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization")
 		w.Header().Set("Access-Control-Allow-Credentials", "true")
 		w.Header().Set("Access-Control-Max-Age", "300")
@@ -89,8 +89,8 @@ func NewServer(storageManager *db.Manager, filestoreClient *filestore.Client, lo
 	apiRouter.Use(s.corsMiddleware)
 	apiRouter.Use(s.loggingMiddleware)
 	apiRouter.HandleFunc("/invoices", s.GetAllInvoicesHandler).Methods("GET")
-	apiRouter.HandleFunc("/invoice/{hash}/review-status", s.SetReviewedStatus).Methods("PATCH")
-	apiRouter.HandleFunc("/invoice/{hash}/payment-status", s.SetPaidStatus).Methods("PATCH")
+	apiRouter.HandleFunc("/invoice/{hash}/review-status", s.SetReviewedStatus).Methods("PATCH", "OPTIONS")
+	apiRouter.HandleFunc("/invoice/{hash}/payment-status", s.SetPaidStatus).Methods("PATCH", "OPTIONS")
 	apiRouter.HandleFunc("/invoice/{hash}/file", s.GetInvoiceFileHandler).Methods("GET")
 	apiRouter.HandleFunc("/invoice/upload", s.FileUploadHandler).Methods("POST", "OPTIONS")
 
