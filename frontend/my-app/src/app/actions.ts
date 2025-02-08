@@ -3,13 +3,12 @@
 import {revalidatePath} from "next/cache";
 import {redirect} from "next/navigation";
 
-interface ActionState<T> {
-  loading: boolean;
-  error: string | null;
-  data: T | undefined;
+interface ActionResult {
+  message: string;
+  details: string;
 }
 
-export async function uploadInvoice(prevState: ActionState<null> | null, formData: FormData) {
+export async function uploadInvoice(prevState: ActionResult | Promise<ActionResult | null> | null, formData: FormData): Promise<ActionResult> {
   formData.set('isPaid', formData.get('isPaid') === 'on' ? 'true' : 'false');
   formData.set('isReviewed', formData.get('isReviewed') === 'on' ? 'true' : 'false');
 

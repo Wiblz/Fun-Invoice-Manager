@@ -59,9 +59,9 @@ func (s *Server) updateInvoiceStatus(w http.ResponseWriter, r *http.Request, sta
 	updateFields := map[string]interface{}{}
 	switch statusField {
 	case "isPaid":
-		updateFields["isPaid"] = requestBody["isPaid"]
+		updateFields["IsPaid"] = requestBody["isPaid"]
 	case "isReviewed":
-		updateFields["isReviewed"] = requestBody["isReviewed"]
+		updateFields["IsReviewed"] = requestBody["isReviewed"]
 	}
 
 	invoice, err := s.storageManager.UpdateInvoiceFields(hash, updateFields, true)

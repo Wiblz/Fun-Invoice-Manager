@@ -9,9 +9,13 @@ import {Button} from "@/components/ui/button";
 import {Upload} from "lucide-react";
 import PdfViewer from "@/components/pdf-viewer";
 import {useState} from "react";
+import {useInvoices} from "@/hooks/use-invoices";
 
-export default function InvoiceList({invoices}: { invoices: Invoice[] }) {
+export default function InvoiceList() {
   const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
+  const {data} = useInvoices();
+  const invoices: Invoice[] = data ?? [];
+  console.log(invoices);
 
   return (
     <div className="container mx-auto p-4 flex">
@@ -44,10 +48,10 @@ export default function InvoiceList({invoices}: { invoices: Invoice[] }) {
               <TableBody>
                 {invoices?.length ?
                   invoices.map((invoice) => (
-                  <InvoiceRow key={invoice.fileHash} invoice={invoice} onView={async () => {
-                    setSelectedInvoice(invoice);
-                  }}/>
-                )) :
+                    <InvoiceRow key={invoice.fileHash} invoice={invoice} onView={async () => {
+                      setSelectedInvoice(invoice);
+                    }}/>
+                  )) :
                   <TableRow className="text-center text-muted-foreground text-lg">
                     <TableCell colSpan={6}>No invoices found</TableCell>
                   </TableRow>

@@ -12,7 +12,7 @@ import {Label} from "@/components/ui/label";
 
 export default function UploadForm() {
   const [file, setFile] = useState<File | null>(null)
-  const [state, formAction, _] = useActionState(uploadInvoice, null)
+  const [state, formAction] = useActionState(uploadInvoice, null)
   const {toast} = useToast()
 
   useEffect(() => {
