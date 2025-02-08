@@ -3,6 +3,7 @@ package db
 import (
 	"github.com/Wiblz/Fun-Invoice-Manager/backend/model"
 	"go.uber.org/zap"
+	"gorm.io/gorm/clause"
 )
 
 func (m *Manager) GetInvoiceByHash(hash string) (*model.Invoice, error) {
@@ -46,4 +47,25 @@ func (m *Manager) UpsertInvoice(invoice *model.Invoice) error {
 // It is an alias for UpsertInvoice, as it achieves the same effect
 func (m *Manager) UpdateInvoice(invoice *model.Invoice) error {
 	return m.UpsertInvoice(invoice)
+}
+
+func (m *Manager) UpdateInvoiceFields(hash string, fields map[string]interface{}, returning bool) (*model.Invoice, error) {
+	var invoice model.Invoice
+	result := m.DB.Model(&invoice)
+
+	if returning {
+		result = result.Clauses(clause.Returning{})
+	}
+
+	result = result.Where("file_hash = ?", hash).Updates(fields)
+	if result.Error != nil {
+		m.logger.Error("Failed to update invoice fields", zap.Error(result.Error), zap.String("hash", hash), zap.Any("fields", fields))
+		return nil, result.Error
+	}
+
+	if returning {
+		return &invoice, nil
+	}
+
+	return nil, nil
 }

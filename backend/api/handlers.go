@@ -20,7 +20,7 @@ const (
 	maxFileSize = 10 * 1024 * 1024
 )
 
-func (s *Server) GetAllInvoicesHandler(w http.ResponseWriter, r *http.Request) {
+func (s *Server) GetAllInvoicesHandler(w http.ResponseWriter, _ *http.Request) {
 	invoices, err := s.storageManager.GetAllInvoices()
 	if err != nil {
 		s.logger.Error("Failed to retrieve all invoices from database", zap.Error(err))
@@ -39,76 +39,55 @@ func (s *Server) GetAllInvoicesHandler(w http.ResponseWriter, r *http.Request) {
 	w.Write(jsonInvoices)
 }
 
-func (s *Server) SetReviewedStatus(w http.ResponseWriter, r *http.Request) {
+func (s *Server) updateInvoiceStatus(w http.ResponseWriter, r *http.Request, statusField string) {
 	vars := mux.Vars(r)
 	hash, present := vars["hash"]
 	if !present {
 		s.logger.Error("Hash path parameter is missing. This handler should not have been called, check the router", zap.String("path", r.URL.Path))
 		w.WriteHeader(http.StatusBadRequest)
-	}
-
-	invoice, err := s.storageManager.GetInvoiceByHash(hash)
-	if err != nil {
-		s.logger.Error("Failed to retrieve invoice from database", zap.String("hash", hash), zap.Error(err))
-		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
-	var requestBody struct {
-		IsReviewed bool `json:"isReviewed"`
-	}
-	err = json.NewDecoder(r.Body).Decode(&requestBody)
+	var requestBody map[string]bool
+	err := json.NewDecoder(r.Body).Decode(&requestBody)
 	if err != nil {
 		s.logger.Warn("Failed to decode request body", zap.Error(err))
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
-	invoice.IsReviewed = requestBody.IsReviewed
-	err = s.storageManager.UpdateInvoice(invoice)
+	updateFields := map[string]interface{}{}
+	switch statusField {
+	case "isPaid":
+		updateFields["isPaid"] = requestBody["isPaid"]
+	case "isReviewed":
+		updateFields["isReviewed"] = requestBody["isReviewed"]
+	}
+
+	invoice, err := s.storageManager.UpdateInvoiceFields(hash, updateFields, true)
 	if err != nil {
 		s.logger.Error("Failed to update invoice in database", zap.String("hash", hash), zap.Error(err))
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
-	w.WriteHeader(http.StatusOK)
+	w.Header().Set("Content-Type", "application/json")
+	jsonInvoice, err := json.Marshal(invoice)
+	if err != nil {
+		s.logger.Error("Failed to marshal updated invoice to JSON", zap.Error(err))
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	w.Write(jsonInvoice)
+}
+
+func (s *Server) SetReviewedStatus(w http.ResponseWriter, r *http.Request) {
+	s.updateInvoiceStatus(w, r, "isReviewed")
 }
 
 func (s *Server) SetPaidStatus(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	hash, present := vars["hash"]
-	if !present {
-		s.logger.Error("Hash path parameter is missing. This handler should not have been called, check the router", zap.String("path", r.URL.Path))
-		w.WriteHeader(http.StatusBadRequest)
-	}
-
-	invoice, err := s.storageManager.GetInvoiceByHash(hash)
-	if err != nil {
-		s.logger.Error("Failed to retrieve invoice from database", zap.String("hash", hash), zap.Error(err))
-		w.WriteHeader(http.StatusInternalServerError)
-		return
-	}
-
-	var requestBody struct {
-		IsPaid bool `json:"isPaid"`
-	}
-	err = json.NewDecoder(r.Body).Decode(&requestBody)
-	if err != nil {
-		s.logger.Warn("Failed to decode request body", zap.Error(err))
-		w.WriteHeader(http.StatusBadRequest)
-		return
-	}
-
-	invoice.IsPaid = requestBody.IsPaid
-	err = s.storageManager.UpdateInvoice(invoice)
-	if err != nil {
-		s.logger.Error("Failed to update invoice in database", zap.String("hash", hash), zap.Error(err))
-		w.WriteHeader(http.StatusInternalServerError)
-		return
-	}
-
-	w.WriteHeader(http.StatusOK)
+	s.updateInvoiceStatus(w, r, "isPaid")
 }
 
 func (s *Server) GetInvoiceFileHandler(w http.ResponseWriter, r *http.Request) {
