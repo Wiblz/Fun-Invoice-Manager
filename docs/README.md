@@ -24,3 +24,12 @@ This is saving us from needing to request the file storage to make a duplicate c
 This, however, opens a possibility for a file storage to go out of sync with the database. If a file is uploaded, but the database is not updated, the file will bit be considered a duplicate on the next upload.
 At the same time, if, for whatever reason the file is deleted from the storage, but the database is not updated, the file will be considered a duplicate on the next upload.
 These edge cases could be pretty rare, but in the end I decided to go with the "safe" approach and always query the file storage for duplicates. This still does not prevent possible desyncs, but at least it makes the file storage the single source of truth.
+
+## Client calculated invoice hash
+The client calculates the hash of the invoice file and sends it to the server. The server then checks if the hash already exists in the database. If it does, the server responds with an error and the client prevents the form submission.
+Exposing an endpoint for checking file existence by hash potentially allows an attacker to map the file storage contents.
+This is not a concern in our use case, as the file storage is not meant to be private.
+
+## Synchronizing the database with the file storage
+On startup, the server checks the file storage for files that are not present in the database. These files are tagged as "missing" which can be seen in the frontend. This allows the user to see which files are missing and possibly reupload them later.  
+I have a slight concern about the performance of this operation, as this queries all the filenames from the storage and also updated all the database entries. This could be a problem with a large number of files. However, I don't see any other way to keep the database in sync with the storage.

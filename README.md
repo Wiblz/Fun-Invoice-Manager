@@ -5,6 +5,7 @@
   - Hash is calculated on the client side and sent to the server
   - Server checks if the hash already exists in the database
   - If the hash exists, client prevents form submission
+- Sync DB with MinIO bucket on startup. Tag invoices without a corresponding file in the bucket.
 
 # Setup
 ## Setting up development storage server
@@ -42,6 +43,7 @@ Create a `.env` file in the `backend` directory with the following variables set
   - `MINIO_SECRET_KEY` - MinIO server secret key, must be set
   - `MINIO_BUCKET` - Storage bucket name, defaults to `invoices`
   - `PRODUCTION` - Set to `true` to enable production mode, defaults to `false`
+  - `DEBUG` - Set to `true` to enable debug mode, defaults to `false`
 - Run the backend server:  
   `go run backend/api/server.go`
 
