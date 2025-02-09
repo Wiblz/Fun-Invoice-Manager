@@ -17,15 +17,21 @@ import (
 
 const (
 	defaultLogPath    = "../logs/invoice.log"
+	defaultLogLevel   = zapcore.InfoLevel
 	defaultSQLiteFile = "invoice.db"
 )
 
-func newLogger(production bool, path string) *zap.Logger {
+func newLogger(production bool, debug bool, path string) *zap.Logger {
 	var encoder zapcore.Encoder
+	level := defaultLogLevel
 	if production {
 		encoder = zapcore.NewJSONEncoder(zap.NewProductionEncoderConfig())
 	} else {
 		encoder = zapcore.NewConsoleEncoder(zap.NewDevelopmentEncoderConfig())
+	}
+
+	if debug {
+		level = zapcore.DebugLevel
 	}
 
 	writer := zapcore.AddSync(&lumberjack.Logger{
@@ -36,7 +42,7 @@ func newLogger(production bool, path string) *zap.Logger {
 		Compress:   true,
 	})
 
-	core := zapcore.NewCore(encoder, zapcore.NewMultiWriteSyncer(writer, zapcore.AddSync(os.Stdout)), zap.InfoLevel)
+	core := zapcore.NewCore(encoder, zapcore.NewMultiWriteSyncer(writer, zapcore.AddSync(os.Stdout)), level)
 
 	return zap.New(core)
 }
@@ -44,18 +50,20 @@ func newLogger(production bool, path string) *zap.Logger {
 func main() {
 	config := viper.New()
 	config.SetConfigFile(".env")
+	config.AutomaticEnv()
 	err := config.ReadInConfig()
 	if err != nil {
 		log.Fatalf("Failed to read config: %v", err)
 	}
 
 	production := config.GetBool("PRODUCTION")
+	debug := config.GetBool("DEBUG")
 	logPath := config.GetString("LOG_PATH")
 	if logPath == "" {
 		logPath = defaultLogPath
 	}
 
-	logger := newLogger(production, logPath)
+	logger := newLogger(production, debug, logPath)
 	defer logger.Sync()
 
 	sqliteFile := config.GetString("SQLITE_FILE")
@@ -74,6 +82,7 @@ func main() {
 	}
 
 	s := api.NewServer(storageManager, filestoreClient, logger)
+	s.SyncFilestore()
 	go s.Run()
 
 	quit := make(chan os.Signal, 1)

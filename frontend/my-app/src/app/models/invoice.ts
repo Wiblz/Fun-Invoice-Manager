@@ -6,4 +6,5 @@ export default interface Invoice {
   amount: string;
   isPaid: boolean;
   isReviewed: boolean;
+  fileExists: boolean;
 }

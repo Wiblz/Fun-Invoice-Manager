@@ -15,7 +15,6 @@ export default function InvoiceList() {
   const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
   const {data} = useInvoices();
   const invoices: Invoice[] = data ?? [];
-  console.log(invoices);
 
   return (
     <div className="container mx-auto p-4 flex">

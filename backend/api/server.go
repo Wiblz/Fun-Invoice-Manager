@@ -1,10 +1,13 @@
 package api
 
 import (
+	"context"
 	"fmt"
 	"github.com/Wiblz/Fun-Invoice-Manager/backend/storage/filestore"
 	"go.uber.org/zap"
+	"maps"
 	"net/http"
+	"path/filepath"
 	"time"
 
 	"github.com/gorilla/mux"
@@ -26,6 +29,29 @@ func (s *Server) Run() {
 	if err != nil {
 		s.logger.Error("Server returned an error", zap.Error(err))
 	}
+}
+
+func (s *Server) SyncFilestore() {
+	start := time.Now()
+	s.logger.Info("Syncing filestore")
+	filenames, err := s.filestoreClient.GetBucketFilenames(context.Background())
+	if err != nil {
+		s.logger.Error("Failed to sync filestore", zap.Error(err))
+	}
+
+	existingHashes := make([]string, 0, len(filenames))
+	for filename := range maps.Keys(filenames) {
+		hash := filename[:len(filename)-len(filepath.Ext(filename))]
+		existingHashes = append(existingHashes, hash)
+	}
+
+	s.logger.Debug("Existing hashes in filestore", zap.Strings("hashes", existingHashes))
+	err = s.storageManager.UpdateInvoiceFileExists(existingHashes)
+	if err != nil {
+		s.logger.Error("Failed to update file exists status in database", zap.Error(err))
+	}
+
+	s.logger.Info("Filestore sync complete", zap.Duration("duration", time.Since(start)))
 }
 
 func (s *Server) Shutdown() error {

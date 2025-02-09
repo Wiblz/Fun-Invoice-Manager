@@ -75,3 +75,20 @@ func (m *Manager) UpdateInvoiceFields(hash string, fields map[string]interface{}
 
 	return nil, nil
 }
+
+func (m *Manager) UpdateInvoiceFileExists(existingHashes []string) error {
+	result := m.DB.Exec(`
+		UPDATE invoices
+		SET file_exists = CASE
+			WHEN file_hash IN ? THEN true
+			ELSE false
+		END
+	`, existingHashes)
+
+	if result.Error != nil {
+		m.logger.Error("Failed to update invoice file exists", zap.Error(result.Error))
+		return result.Error
+	}
+
+	return nil
+}

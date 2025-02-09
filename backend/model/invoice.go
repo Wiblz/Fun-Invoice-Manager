@@ -11,4 +11,5 @@ type Invoice struct {
 	IsPaid           bool       `json:"isPaid"`
 	IsReviewed       bool       `json:"isReviewed"`
 	RawText          string     `json:"-"`
+	FileExists       bool       `json:"fileExists"` // if the file is stored in filestore
 }

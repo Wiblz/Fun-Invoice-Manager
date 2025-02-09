@@ -55,11 +55,7 @@ func (s *Server) CheckInvoiceExistsHandler(w http.ResponseWriter, r *http.Reques
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	if invoice == nil {
-		w.Write([]byte("false"))
-	} else {
-		w.Write([]byte("true"))
-	}
+	w.Write([]byte(strconv.FormatBool(invoice != nil && invoice.FileExists))) // this allows uploading a missing file
 }
 
 func (s *Server) updateInvoiceStatus(w http.ResponseWriter, r *http.Request, statusField string) {

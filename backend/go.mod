@@ -1,6 +1,6 @@
 module github.com/Wiblz/Fun-Invoice-Manager/backend
 
-go 1.22.0
+go 1.23.5
 
 require (
 	github.com/gen2brain/go-fitz v1.24.14
