@@ -1,8 +1,10 @@
 package db
 
 import (
+	"errors"
 	"github.com/Wiblz/Fun-Invoice-Manager/backend/model"
 	"go.uber.org/zap"
+	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 )
 
@@ -10,6 +12,10 @@ func (m *Manager) GetInvoiceByHash(hash string) (*model.Invoice, error) {
 	var invoice model.Invoice
 	result := m.DB.First(&invoice, "file_hash = ?", hash)
 	if result.Error != nil {
+		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
+			return nil, nil
+		}
+
 		m.logger.Error("Failed to retrieve invoice by hash", zap.String("hash", hash), zap.Error(result.Error))
 		return nil, result.Error
 	}

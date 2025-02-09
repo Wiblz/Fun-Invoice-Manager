@@ -1,5 +1,12 @@
-# Setup
+# New
+- SWR for client side data fetching and mutation
+- Static Next.js build
+- Client side invoice hashing to avoid unnecessary uploads:
+  - Hash is calculated on the client side and sent to the server
+  - Server checks if the hash already exists in the database
+  - If the hash exists, client prevents form submission
 
+# Setup
 ## Setting up development storage server
 In order to run the application, a MinIO server must be set up.  
 - Run a docker container with a MinIO server:

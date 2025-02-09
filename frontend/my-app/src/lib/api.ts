@@ -95,3 +95,29 @@ export async function uploadInvoice(formData: FormData): Promise<APIResponse<nul
     };
   }
 }
+
+export async function checkFileExists(hash: string): Promise<APIResponse<boolean>> {
+  try {
+    const response = await fetch(`http://localhost:8080/api/v1/invoice/${hash}/exists`);
+
+    if (!response.ok) {
+      return {
+        error: {
+          code: ErrorCode.SERVER_ERROR,
+          message: "Check file exists failed",
+          details: await response.text()
+        }
+      };
+    }
+
+    return {data: await response.json()};
+  } catch (error) {
+    return {
+      error: {
+        code: ErrorCode.SERVER_ERROR,
+        message: "Check file exists failed",
+        details: String(error)
+      }
+    };
+  }
+}

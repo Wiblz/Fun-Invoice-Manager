@@ -7,16 +7,41 @@ import {FileCheck, Upload, X} from "lucide-react";
 import {Input} from "@/components/ui/input";
 import {Switch} from "@/components/ui/switch";
 import {Label} from "@/components/ui/label";
-import {uploadInvoice} from "@/lib/api";
+import {checkFileExists, uploadInvoice} from "@/lib/api";
 import {redirect} from "next/navigation";
+import {calculateFileHash} from "@/lib/utils";
 
 export default function UploadForm() {
   const [file, setFile] = useState<File | null>(null)
   const {toast} = useToast()
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
+      const hash = await calculateFileHash(file);
+      console.log(hash);
+      const response = await checkFileExists(hash);
+      if (response.error) {
+        toast({
+          title: response.error.message,
+          variant: 'error',
+          description: response.error.details
+        })
+
+        clearSelection();
+        return
+      }
+
+      if (response.data) {
+        toast({
+          title: 'File already exists',
+          variant: 'error',
+          description: 'This file has already been uploaded'
+        })
+
+        clearSelection();
+        return
+      }
       setFile(file);
     }
   };

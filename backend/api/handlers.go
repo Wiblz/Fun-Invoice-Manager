@@ -39,6 +39,29 @@ func (s *Server) GetAllInvoicesHandler(w http.ResponseWriter, _ *http.Request) {
 	w.Write(jsonInvoices)
 }
 
+func (s *Server) CheckInvoiceExistsHandler(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	hash, present := vars["hash"]
+	if !present {
+		s.logger.Error("Hash path parameter is missing. This handler should not have been called, check the router", zap.String("path", r.URL.Path))
+		w.WriteHeader(http.StatusBadRequest)
+	}
+
+	invoice, err := s.storageManager.GetInvoiceByHash(hash)
+	if err != nil {
+		s.logger.Error("Failed to retrieve invoice from database", zap.String("hash", hash), zap.Error(err))
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	if invoice == nil {
+		w.Write([]byte("false"))
+	} else {
+		w.Write([]byte("true"))
+	}
+}
+
 func (s *Server) updateInvoiceStatus(w http.ResponseWriter, r *http.Request, statusField string) {
 	vars := mux.Vars(r)
 	hash, present := vars["hash"]
