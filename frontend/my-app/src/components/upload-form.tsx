@@ -1,28 +1,18 @@
 "use client";
 
-import {useActionState, useEffect, useState} from "react";
+import {useState} from "react";
 import {Button} from "@/components/ui/button";
 import {useToast} from "@/hooks/use-toast";
 import {FileCheck, Upload, X} from "lucide-react";
 import {Input} from "@/components/ui/input";
 import {Switch} from "@/components/ui/switch";
-import Form from "next/form";
-import {uploadInvoice} from "@/app/actions";
 import {Label} from "@/components/ui/label";
+import {uploadInvoice} from "@/lib/api";
+import {redirect} from "next/navigation";
 
 export default function UploadForm() {
   const [file, setFile] = useState<File | null>(null)
-  const [state, formAction] = useActionState(uploadInvoice, null)
   const {toast} = useToast()
-
-  useEffect(() => {
-    if (!state) return
-    toast({
-      title: state.message,
-      variant: 'error',
-      description: state?.details
-    })
-  }, [state]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -38,8 +28,35 @@ export default function UploadForm() {
     if (fileInput) fileInput.value = '';
   };
 
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (!file) {
+      toast({
+        title: 'No file selected',
+        variant: 'error',
+        description: 'Please select a file to upload'
+      })
+      return
+    }
+
+    const form = e.currentTarget;
+    const formData = new FormData(form);
+    formData.append('invoice', file);
+
+    const response = await uploadInvoice(formData);
+    if (response.error) {
+      toast({
+        title: response.error.message,
+        variant: 'error',
+        description: response.error.details
+      })
+    } else {
+      redirect("/");
+    }
+  }
+
   return (
-    <Form action={formAction} className="flex flex-col gap-4">
+    <form onSubmit={handleSubmit} className="flex flex-col gap-4">
       <div className="space-y-4">
         <Button
           type="button"
@@ -93,14 +110,14 @@ export default function UploadForm() {
             <Label htmlFor="paid" className="text-base">
               Mark as Paid
             </Label>
-            <Switch id="paid" name="isPaid"
+            <Switch id="paid" name="isPaid" value={"false"}
                     className="data-[state=checked]:bg-green-800 data-[state=unchecked]:bg-red-700"/>
           </div>
           <div className="flex items-center space-x-2">
             <Label htmlFor="reviewed" className="text-base">
               Mark as Reviewed
             </Label>
-            <Switch id="reviewed" name="isReviewed"
+            <Switch id="reviewed" name="isReviewed" value={"false"}
                     className="data-[state=checked]:bg-green-800 data-[state=unchecked]:bg-red-700"/>
           </div>
         </div>
@@ -108,6 +125,6 @@ export default function UploadForm() {
       <div className="mt-4">
         <Button type="submit">Submit</Button>
       </div>
-    </Form>
+    </form>
   )
 }

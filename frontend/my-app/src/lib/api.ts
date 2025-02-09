@@ -2,6 +2,20 @@ import type Invoice from "@/app/models/invoice";
 import {KeyedMutator} from "swr";
 import type {SingleFieldUpdate} from "@/lib/utils";
 
+export enum ErrorCode {
+  INVOICE_ALREADY_EXISTS = 'INVOICE_ALREADY_EXISTS',
+  SERVER_ERROR = 'SERVER_ERROR'
+}
+
+export interface APIResponse<T> {
+  data?: T;
+  error?: {
+    code: ErrorCode;
+    message: string;
+    details?: string;
+  };
+}
+
 async function sendRequest(url: string, {arg}: { arg: Record<string, unknown> }) {
   return fetch(url, {
     method: 'PATCH',
@@ -40,4 +54,44 @@ export const updateInvoice = (mutate: KeyedMutator<Invoice[]>, filename: string,
     },
     revalidate: false
   });
+}
+
+export async function uploadInvoice(formData: FormData): Promise<APIResponse<null>> {
+  try {
+    const response = await fetch('http://localhost:8080/api/v1/invoice/upload', {
+      method: 'POST',
+      body: formData
+    })
+
+    if (!response.ok) {
+      switch (response.status) {
+        case 409:
+          return {
+            error: {
+              code: ErrorCode.INVOICE_ALREADY_EXISTS,
+              message: "Upload failed",
+              details: "Invoice already exists"
+            }
+          };
+        default:
+          return {
+            error: {
+              code: ErrorCode.SERVER_ERROR,
+              message: "Upload failed",
+              details: await response.text()
+            }
+          };
+      }
+    }
+
+    return {data: null};
+  } catch (error) {
+    return {
+      error: {
+        code: ErrorCode.SERVER_ERROR,
+        message: "Upload failed",
+        details: String(error)
+      }
+    };
+  }
 }

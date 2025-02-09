@@ -1,7 +1,6 @@
 import {TableCell, TableRow} from "@/components/ui/table";
 import {Button} from "@/components/ui/button";
 import Invoice from "@/app/models/invoice";
-import {setInvoiceReviewStatus} from "@/app/actions";
 import {Checkbox} from "@/components/ui/checkbox";
 import {useInvoices} from "@/hooks/use-invoices";
 import {updateInvoice} from "@/lib/api";
@@ -10,14 +9,13 @@ export default function InvoiceRow({invoice, onView}: {
   invoice: Invoice,
   onView: () => void
 }) {
-  const { mutate } = useInvoices();
+  const {mutate} = useInvoices();
 
   return (
     <TableRow className={invoice.isReviewed ? '' : 'bg-zinc-200'}>
       <TableCell>
         <Checkbox checked={invoice.isReviewed} onCheckedChange={async () => {
-          console.log('setting review status');
-          await setInvoiceReviewStatus(invoice.fileHash, !invoice.isReviewed);
+          updateInvoice(mutate, invoice.fileHash, {isReviewed: !invoice.isReviewed});
         }}/>
       </TableCell>
       <TableCell>{invoice.id || <span className="text-zinc-600">unknown</span>}</TableCell>
