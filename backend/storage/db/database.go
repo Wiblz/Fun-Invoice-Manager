@@ -49,28 +49,21 @@ func (m *Manager) UpsertInvoice(invoice *model.Invoice) error {
 	return nil
 }
 
-// UpdateInvoice updates the invoice in the database
-// It is an alias for UpsertInvoice, as it achieves the same effect
-func (m *Manager) UpdateInvoice(invoice *model.Invoice) error {
-	return m.UpsertInvoice(invoice)
-}
-
-func (m *Manager) UpdateInvoiceFields(hash string, fields map[string]interface{}, returning bool) (*model.Invoice, error) {
-	var invoice model.Invoice
+func (m *Manager) UpdateInvoice(invoice *model.Invoice, returning bool) (*model.Invoice, error) {
 	result := m.DB.Model(&invoice)
 
 	if returning {
 		result = result.Clauses(clause.Returning{})
 	}
 
-	result = result.Where("file_hash = ?", hash).Updates(fields)
+	result = result.Updates(invoice)
 	if result.Error != nil {
-		m.logger.Error("Failed to update invoice fields", zap.Error(result.Error), zap.String("hash", hash), zap.Any("fields", fields))
+		m.logger.Error("Failed to update invoice", zap.Error(result.Error), zap.String("hash", invoice.FileHash), zap.Any("invoice update", &invoice))
 		return nil, result.Error
 	}
 
 	if returning {
-		return &invoice, nil
+		return invoice, nil
 	}
 
 	return nil, nil

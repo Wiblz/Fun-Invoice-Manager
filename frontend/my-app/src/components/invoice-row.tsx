@@ -5,21 +5,30 @@ import {Checkbox} from "@/components/ui/checkbox";
 import {useInvoices} from "@/hooks/use-invoices";
 import {updateInvoice} from "@/lib/api";
 import {CircleAlert} from "lucide-react";
+import Link from "next/link";
+import {mutate} from "swr";
 
 export default function InvoiceRow({invoice, onView}: {
   invoice: Invoice,
   onView: () => void
 }) {
-  const {mutate} = useInvoices();
+  const {mutate: mutateInvoices} = useInvoices();
 
   return (
     <TableRow className={invoice.isReviewed ? '' : 'bg-zinc-200'}>
       <TableCell>
         <Checkbox checked={invoice.isReviewed} onCheckedChange={async () => {
-          updateInvoice(mutate, invoice.fileHash, {isReviewed: !invoice.isReviewed});
+          updateInvoice(mutateInvoices, {fileHash: invoice.fileHash, isReviewed: !invoice.isReviewed});
         }}/>
       </TableCell>
-      <TableCell>{invoice.id || <span className="text-zinc-600">unknown</span>}</TableCell>
+      <TableCell>
+        <Link href={`/invoices/${invoice.fileHash}`}
+              onClick={() => {
+                mutate(`http://localhost:8080/api/v1/invoices/${invoice.fileHash}`, invoice, false);
+              }}>
+          {invoice.id || <span className="text-zinc-600">unknown</span>}
+        </Link>
+      </TableCell>
       <TableCell>{invoice.date}</TableCell>
       <TableCell>
         {invoice.fileExists ? (
@@ -38,7 +47,7 @@ export default function InvoiceRow({invoice, onView}: {
         className={invoice.isPaid ? 'text-green-700' : 'text-amber-500'}
       >
         <Button variant="outline" title={invoice.isPaid ? 'Set as pending' : 'Set as paid'} onClick={async () => {
-          updateInvoice(mutate, invoice.fileHash, {isPaid: !invoice.isPaid});
+          updateInvoice(mutateInvoices, {fileHash: invoice.fileHash, isPaid: !invoice.isPaid});
         }}>
           {invoice.isPaid ? 'Paid' : 'Pending'}
         </Button>

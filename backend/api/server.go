@@ -116,8 +116,7 @@ func NewServer(storageManager *db.Manager, filestoreClient *filestore.Client, lo
 	apiRouter.Use(s.loggingMiddleware)
 	apiRouter.HandleFunc("/invoices", s.GetAllInvoicesHandler).Methods("GET")
 	apiRouter.HandleFunc("/invoice/{hash}/exists", s.CheckInvoiceExistsHandler).Methods("GET")
-	apiRouter.HandleFunc("/invoice/{hash}/review-status", s.SetReviewedStatus).Methods("PATCH", "OPTIONS")
-	apiRouter.HandleFunc("/invoice/{hash}/payment-status", s.SetPaidStatus).Methods("PATCH", "OPTIONS")
+	apiRouter.HandleFunc("/invoice/{hash}", s.UpdateInvoiceHandler).Methods("PATCH", "OPTIONS")
 	apiRouter.HandleFunc("/invoice/{hash}/file", s.GetInvoiceFileHandler).Methods("GET")
 	apiRouter.HandleFunc("/invoice/upload", s.FileUploadHandler).Methods("POST", "OPTIONS")
 

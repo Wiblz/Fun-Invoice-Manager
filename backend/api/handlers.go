@@ -58,7 +58,7 @@ func (s *Server) CheckInvoiceExistsHandler(w http.ResponseWriter, r *http.Reques
 	w.Write([]byte(strconv.FormatBool(invoice != nil && invoice.FileExists))) // this allows uploading a missing file
 }
 
-func (s *Server) updateInvoiceStatus(w http.ResponseWriter, r *http.Request, statusField string) {
+func (s *Server) UpdateInvoiceHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	hash, present := vars["hash"]
 	if !present {
@@ -67,23 +67,17 @@ func (s *Server) updateInvoiceStatus(w http.ResponseWriter, r *http.Request, sta
 		return
 	}
 
-	var requestBody map[string]bool
-	err := json.NewDecoder(r.Body).Decode(&requestBody)
+	var invoiceUpdate model.InvoiceUpdate
+	err := json.NewDecoder(r.Body).Decode(&invoiceUpdate)
 	if err != nil {
 		s.logger.Warn("Failed to decode request body", zap.Error(err))
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
-	updateFields := map[string]interface{}{}
-	switch statusField {
-	case "isPaid":
-		updateFields["IsPaid"] = requestBody["isPaid"]
-	case "isReviewed":
-		updateFields["IsReviewed"] = requestBody["isReviewed"]
-	}
+	invoiceUpdate.FileHash = hash
 
-	invoice, err := s.storageManager.UpdateInvoiceFields(hash, updateFields, true)
+	invoice, err := s.storageManager.UpdateInvoice(invoiceUpdate.ToInvoice(), true)
 	if err != nil {
 		s.logger.Error("Failed to update invoice in database", zap.String("hash", hash), zap.Error(err))
 		w.WriteHeader(http.StatusInternalServerError)
@@ -99,14 +93,6 @@ func (s *Server) updateInvoiceStatus(w http.ResponseWriter, r *http.Request, sta
 	}
 
 	w.Write(jsonInvoice)
-}
-
-func (s *Server) SetReviewedStatus(w http.ResponseWriter, r *http.Request) {
-	s.updateInvoiceStatus(w, r, "isReviewed")
-}
-
-func (s *Server) SetPaidStatus(w http.ResponseWriter, r *http.Request) {
-	s.updateInvoiceStatus(w, r, "isPaid")
 }
 
 func (s *Server) GetInvoiceFileHandler(w http.ResponseWriter, r *http.Request) {
@@ -256,6 +242,7 @@ func (s *Server) FileUploadHandler(w http.ResponseWriter, r *http.Request) {
 		IsPaid:           isPaid,
 		IsReviewed:       isReviewed,
 		RawText:          text,
+		FileExists:       true,
 	}
 
 	err = s.storageManager.UpsertInvoice(invoice)

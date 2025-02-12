@@ -1,6 +1,5 @@
 import type Invoice from "@/app/models/invoice";
 import {KeyedMutator} from "swr";
-import type {SingleFieldUpdate} from "@/lib/utils";
 
 export enum ErrorCode {
   INVOICE_ALREADY_EXISTS = 'INVOICE_ALREADY_EXISTS',
@@ -34,20 +33,15 @@ export const setInvoiceReviewStatus = (filename: string, isReviewed: boolean) =>
   return () => sendRequest(`http://localhost:8080/api/v1/invoice/${filename}/review-status`, {arg: {isReviewed}});
 }
 
-export const updateInvoice = (mutate: KeyedMutator<Invoice[]>, filename: string, update: SingleFieldUpdate<Invoice>) => {
-  let mutatingFunction;
-  switch (Object.keys(update)[0]) {
-    case 'isPaid':
-      mutatingFunction = setInvoicePaymentStatus(filename, update.isPaid as boolean);
-      break;
-    case 'isReviewed':
-      mutatingFunction = setInvoiceReviewStatus(filename, update.isReviewed as boolean);
-      break;
-    default:
-      throw new Error('Invalid update key');
-  }
+export const updateMultipleInvoiceFields = (filename: string, updates: Partial<Invoice>) => {
+  return () => sendRequest(`http://localhost:8080/api/v1/invoice/${filename}`, {arg: updates});
+}
 
-  mutate(mutatingFunction, {
+export const updateInvoice = (mutate: KeyedMutator<Invoice[]>, update: Partial<Invoice>) => {
+  if (!update.fileHash) return;
+  const filename = update.fileHash;
+
+  mutate(updateMultipleInvoiceFields(filename, update), {
     populateCache: (updatedInvoice: Invoice, invoices: Invoice[] | undefined): Invoice[] => {
       if (!invoices) return [];
       return invoices.map((invoice: Invoice) => invoice.fileHash === updatedInvoice.fileHash ? updatedInvoice : invoice);
