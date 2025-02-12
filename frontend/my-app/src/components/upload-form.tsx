@@ -1,6 +1,6 @@
 "use client";
 
-import {useState} from "react";
+import {useRef, useState} from "react";
 import {Button} from "@/components/ui/button";
 import {useToast} from "@/hooks/use-toast";
 import {FileCheck, Upload, X} from "lucide-react";
@@ -13,26 +13,32 @@ import {calculateFileHash} from "@/lib/utils";
 
 export default function UploadForm() {
   const [file, setFile] = useState<File | null>(null)
+  const [updating, setUpdating] = useState(false)
+  const formRef = useRef<HTMLFormElement>(null);
   const {toast} = useToast()
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const form = formRef.current;
+    if (!form) return;
+
     const file = e.target.files?.[0];
     if (file) {
       const hash = await calculateFileHash(file);
       console.log(hash);
       const response = await checkFileExists(hash);
-      if (response.error) {
+      if (response.error || !response.data) {
         toast({
-          title: response.error.message,
+          title: response.error?.message ?? 'Error',
           variant: 'error',
-          description: response.error.details
+          description: response.error?.details ?? 'An unexpected server response',
         })
 
         clearSelection();
         return
       }
 
-      if (response.data) {
+      const {invoice, fileExists} = response.data;
+      if (fileExists) {
         toast({
           title: 'File already exists',
           variant: 'error',
@@ -42,12 +48,22 @@ export default function UploadForm() {
         clearSelection();
         return
       }
+
+      if (invoice) {
+        form.invoiceNumber.value = invoice.id;
+        form.date.value = new Date(invoice.date).toISOString().split('T')[0];
+        form.amount.value = invoice.amount;
+        form.paid.checked = invoice.isPaid;
+        form.reviewed.checked = invoice.isReviewed;
+        setUpdating(true);
+      }
       setFile(file);
     }
   };
 
   const clearSelection = () => {
     setFile(null);
+    setUpdating(false);
     // Reset the input value so the same file can be selected again
     const fileInput = document.getElementById('fileInput') as HTMLInputElement;
     if (fileInput) fileInput.value = '';
@@ -55,6 +71,9 @@ export default function UploadForm() {
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    const form = formRef.current;
+    if (!form) return;
+
     if (!file) {
       toast({
         title: 'No file selected',
@@ -64,7 +83,6 @@ export default function UploadForm() {
       return
     }
 
-    const form = e.currentTarget;
     const formData = new FormData(form);
     formData.append('invoice', file);
 
@@ -81,7 +99,7 @@ export default function UploadForm() {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+    <form onSubmit={handleSubmit} ref={formRef} className="flex flex-col gap-4">
       <div className="space-y-4">
         <Button
           type="button"
@@ -147,8 +165,11 @@ export default function UploadForm() {
           </div>
         </div>
       </div>
-      <div className="mt-4">
-        <Button type="submit">Submit</Button>
+      <div className="flex items-center gap-4 mt-4">
+        <Button type="submit">{updating ? 'Update' : 'Create'}</Button>
+        {updating && (
+          <span className="text-sm text-gray-600">File for this invoice is missing, uploading it will fix this</span>
+        )}
       </div>
     </form>
   )

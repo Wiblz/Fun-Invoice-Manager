@@ -90,7 +90,7 @@ export async function uploadInvoice(formData: FormData): Promise<APIResponse<nul
   }
 }
 
-export async function checkFileExists(hash: string): Promise<APIResponse<boolean>> {
+export async function checkFileExists(hash: string): Promise<APIResponse<{invoice: Invoice|null, fileExists: boolean}>> {
   try {
     const response = await fetch(`http://localhost:8080/api/v1/invoice/${hash}/exists`);
 

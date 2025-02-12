@@ -11,8 +11,6 @@ import (
 	"io"
 	"net/http"
 	"path/filepath"
-	"strconv"
-	"time"
 )
 
 const (
@@ -55,7 +53,16 @@ func (s *Server) CheckInvoiceExistsHandler(w http.ResponseWriter, r *http.Reques
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	w.Write([]byte(strconv.FormatBool(invoice != nil && invoice.FileExists))) // this allows uploading a missing file
+	jsonResponse, err := json.Marshal(map[string]interface{}{
+		"invoice":    invoice,
+		"fileExists": invoice != nil && invoice.FileExists,
+	})
+	if err != nil {
+		s.logger.Error("Failed to marshal response to JSON", zap.Error(err))
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	w.Write(jsonResponse)
 }
 
 func (s *Server) UpdateInvoiceHandler(w http.ResponseWriter, r *http.Request) {
@@ -199,51 +206,20 @@ func (s *Server) FileUploadHandler(w http.ResponseWriter, r *http.Request) {
 		text += pageText
 	}
 
-	// it's fine if id is not present
-	var id *string
-	idStr := r.FormValue("id")
-	if idStr != "" {
-		id = &idStr
-	}
-
-	var invoiceDate *time.Time
-	if dateStr := r.FormValue("date"); dateStr != "" {
-		date, err := time.Parse("2006-01-02", dateStr)
-		if err == nil {
-			invoiceDate = &date
-		} else {
-			s.logger.Warn("Invalid date format", zap.String("date", dateStr), zap.Error(err))
-		}
-	}
-
-	amount, err := strconv.ParseFloat(r.FormValue("amount"), 64)
-	if err != nil {
-		amount = 0.0
-	}
-
-	isPaid, err := strconv.ParseBool(r.FormValue("isPaid"))
-	if err != nil {
-		s.logger.Warn("Invalid isPaid value", zap.String("isPaid", r.FormValue("isPaid")), zap.Error(err))
-		isPaid = false
-	}
-
-	isReviewed, err := strconv.ParseBool(r.FormValue("isReviewed"))
-	if err != nil {
-		s.logger.Warn("Invalid isReviewed value", zap.String("isReviewed", r.FormValue("isReviewed")), zap.Error(err))
-		isReviewed = false
-	}
-
 	invoice := &model.Invoice{
 		FileHash:         fmt.Sprintf("%x", hash.Sum(nil)),
 		OriginalFileName: header.Filename,
-		ID:               id,
-		Date:             invoiceDate,
-		Amount:           &amount,
-		IsPaid:           isPaid,
-		IsReviewed:       isReviewed,
 		RawText:          text,
 		FileExists:       true,
 	}
+
+	err = r.ParseMultipartForm(0)
+	if err != nil {
+		s.logger.Error("Failed to parse form data", zap.Error(err))
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	invoice.FromFormData(&r.Form)
 
 	err = s.storageManager.UpsertInvoice(invoice)
 	if err != nil {

@@ -1,6 +1,10 @@
 package model
 
-import "time"
+import (
+	"net/url"
+	"strconv"
+	"time"
+)
 
 type Invoice struct {
 	FileHash         string     `gorm:"primaryKey" json:"fileHash"`
@@ -12,6 +16,36 @@ type Invoice struct {
 	IsReviewed       bool       `json:"isReviewed"`
 	RawText          string     `json:"-"`
 	FileExists       bool       `json:"fileExists"` // if the file is stored in filestore
+}
+
+func (i *Invoice) FromFormData(form *url.Values) {
+	// it's fine if id is not present
+	idStr := form.Get("id")
+	if idStr != "" {
+		i.ID = &idStr
+	}
+
+	if dateStr := form.Get("date"); dateStr != "" {
+		date, err := time.Parse("2006-01-02", dateStr)
+		if err == nil {
+			i.Date = &date
+		}
+	}
+
+	amount, err := strconv.ParseFloat(form.Get("amount"), 64)
+	if err == nil {
+		i.Amount = &amount
+	}
+
+	isPaid, err := strconv.ParseBool(form.Get("isPaid"))
+	if err == nil {
+		i.IsPaid = isPaid
+	}
+
+	isReviewed, err := strconv.ParseBool(form.Get("isReviewed"))
+	if err == nil {
+		i.IsReviewed = isReviewed
+	}
 }
 
 // InvoiceUpdate is the request body for updating an existing invoice
