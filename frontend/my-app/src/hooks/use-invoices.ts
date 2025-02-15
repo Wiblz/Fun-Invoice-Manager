@@ -7,5 +7,5 @@ export function useInvoices() {
 }
 
 export function useInvoice(hash: string) {
-  return useSWR(`http://localhost:8080/api/v1/invoices/${hash}`, fetcher);
+  return useSWR(`http://localhost:8080/api/v1/invoice/${hash}`, fetcher);
 }
