@@ -42,14 +42,12 @@ export default function EditForm({ hash }: { hash: string }) {
           <h1 className="text-2xl font-bold">Edit Invoice</h1>
         </CardHeader>
         <CardContent>
-          {!isLoading && (
-            <InvoiceForm
-              schema={editInvoiceSchema}
-              onSubmit={onSubmit}
-              defaultValues={invoice}
-              isEdit={true}
-            />
-          )}
+          <InvoiceForm
+            schema={editInvoiceSchema}
+            onSubmit={onSubmit}
+            invoice={invoice}
+            isEdit={true}
+          />
         </CardContent>
       </Card>
     </div>

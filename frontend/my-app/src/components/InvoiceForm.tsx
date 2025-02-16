@@ -1,9 +1,4 @@
-import {
-  ControllerRenderProps,
-  DefaultValues,
-  SubmitHandler,
-  useForm,
-} from "react-hook-form";
+import { ControllerRenderProps, SubmitHandler, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
   Form,
@@ -19,27 +14,38 @@ import { Input } from "./ui/input";
 import { Switch } from "@/components/ui/switch";
 import { z } from "zod";
 import { useEffect, useRef, useState } from "react";
-import { calculateFileHash } from "@/lib/utils";
-import { checkFileExists } from "@/lib/api";
-import { toast } from "@/hooks/use-toast";
 import { BaseInvoiceFormData } from "@/app/schemas/invoice";
+import type Invoice from "@/app/models/invoice";
 
 interface InvoiceFormProps<T extends BaseInvoiceFormData> {
   schema: z.ZodSchema<T>;
   onSubmit: SubmitHandler<T>;
-  defaultValues?: DefaultValues<T>;
+  invoice: Invoice;
+  onFileChange?: (file: File | undefined) => Promise<boolean>;
   isEdit?: boolean;
 }
+
+const placeholderInvoice: Invoice = {
+  id: "",
+  date: new Date().toISOString().split("T")[0],
+  amount: "",
+  isPaid: false,
+  isReviewed: false,
+  fileHash: "",
+  originalFileName: "",
+  fileExists: false,
+};
 
 export default function InvoiceForm<T extends BaseInvoiceFormData>({
   schema,
   onSubmit,
-  defaultValues,
+  invoice,
+  onFileChange,
   isEdit = false,
 }: InvoiceFormProps<T>) {
   const form = useForm<T>({
     resolver: zodResolver(schema),
-    defaultValues,
+    defaultValues: invoice ?? placeholderInvoice,
   });
 
   const { control, reset, handleSubmit } = form;
@@ -47,55 +53,10 @@ export default function InvoiceForm<T extends BaseInvoiceFormData>({
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    reset(defaultValues);
-  }, [defaultValues, reset]);
-
-  const handleFileChange = async (
-    field: ControllerRenderProps<T, "invoice">,
-    e: React.ChangeEvent<HTMLInputElement>,
-  ) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    const hash = await calculateFileHash(file);
-    const response = await checkFileExists(hash);
-    if (response.error || !response.data) {
-      toast({
-        title: response.error?.message ?? "Error",
-        variant: "error",
-        description: response.error?.details ?? "An unexpected server response",
-      });
-
-      clearSelection(field);
-      return;
-    }
-
-    const { invoice, fileExists } = response.data;
-    if (fileExists) {
-      toast({
-        title: "File already exists",
-        variant: "error",
-        description: "This file has already been uploaded",
-      });
-
-      clearSelection(field);
-      return;
-    }
-
-    if (invoice) {
-      form.setValue("id", invoice.id);
-      form.setValue("date", new Date(invoice.date).toISOString().split("T")[0]);
-      form.setValue("amount", invoice.amount);
-      form.setValue("paid", invoice.isPaid);
-      form.setValue("reviewed", invoice.isReviewed);
-      setUpdating(true);
-    }
-
-    field.onChange(file);
-  };
+    reset(invoice);
+  }, [invoice, reset]);
 
   const clearSelection = (field: ControllerRenderProps<T, "invoice">) => {
-    console.log(field, field.onChange);
     field.onChange(null);
     setUpdating(false);
     // Reset the input value so the same file can be selected again
@@ -112,8 +73,6 @@ export default function InvoiceForm<T extends BaseInvoiceFormData>({
             name="invoice"
             control={control}
             render={({ field }) => {
-              const file = form.watch("invoice");
-
               return (
                 <FormItem>
                   <FormControl>
@@ -131,12 +90,24 @@ export default function InvoiceForm<T extends BaseInvoiceFormData>({
                         type="file"
                         accept="application/pdf"
                         className="hidden"
-                        onChange={(e) => handleFileChange(field, e)}
+                        onChange={(e) => {
+                          if (!onFileChange) return;
+                          const file = e.target.files?.[0];
+                          onFileChange(file).then((success) => {
+                            if (success) {
+                              field.onChange(file);
+                            } else {
+                              clearSelection(field);
+                            }
+                          });
+                        }}
                       />
-                      {file && (
+                      {field.value && (
                         <div className="flex items-center gap-2 text-sm">
                           <FileCheck className="w-4 h-4 text-green-800" />
-                          <span className="text-gray-600">{file.name}</span>
+                          <span className="text-gray-600">
+                            {(field.value as File).name}
+                          </span>
                           <Button
                             variant="ghost"
                             size="icon"
@@ -250,8 +221,7 @@ export default function InvoiceForm<T extends BaseInvoiceFormData>({
           <Button type="submit">
             {isEdit || isUpdating ? "Update" : "Create"}
           </Button>
-          {((isEdit && defaultValues?.fileExists === "false") ||
-            isUpdating) && (
+          {((isEdit && invoice?.fileExists === "false") || isUpdating) && (
             <span className="text-sm text-gray-600">
               File for this invoice is missing, uploading it will fix this
             </span>
