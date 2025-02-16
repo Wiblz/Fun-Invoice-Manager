@@ -16,5 +16,6 @@ export const createInvoiceSchema = baseInvoiceSchema.extend({
 
 export const editInvoiceSchema = baseInvoiceSchema;
 
+export type BaseInvoiceFormData = z.infer<typeof baseInvoiceSchema>;
 export type CreateInvoiceFormData = z.infer<typeof createInvoiceSchema>;
 export type EditInvoiceFormData = z.infer<typeof editInvoiceSchema>;
