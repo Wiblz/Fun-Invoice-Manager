@@ -7,15 +7,15 @@ import (
 )
 
 type Invoice struct {
-	FileHash         string     `gorm:"primaryKey" json:"fileHash"`
-	OriginalFileName string     `json:"originalFileName"`
-	ID               *string    `json:"id"` // not an id in database sense, just to cover invoice "numbers" with any characters
-	Date             *time.Time `json:"date"`
-	Amount           *float64   `json:"amount"`
-	IsPaid           bool       `json:"isPaid"`
-	IsReviewed       bool       `json:"isReviewed"`
-	RawText          string     `json:"-"`
-	FileExists       bool       `json:"fileExists"` // if the file is stored in filestore
+	FileHash         string   `gorm:"primaryKey" json:"fileHash"`
+	OriginalFileName string   `json:"originalFileName"`
+	ID               *string  `json:"id"` // not an id in database sense, just to cover invoice "numbers" with any characters
+	Date             FormDate `json:"date"`
+	Amount           *float64 `json:"amount"`
+	IsPaid           bool     `json:"isPaid"`
+	IsReviewed       bool     `json:"isReviewed"`
+	RawText          string   `json:"-"`
+	FileExists       bool     `json:"fileExists"` // if the file is stored in filestore
 }
 
 func (i *Invoice) FromFormData(form *url.Values) {
@@ -28,7 +28,7 @@ func (i *Invoice) FromFormData(form *url.Values) {
 	if dateStr := form.Get("date"); dateStr != "" {
 		date, err := time.Parse("2006-01-02", dateStr)
 		if err == nil {
-			i.Date = &date
+			i.Date = FormDate{&date}
 		}
 	}
 
@@ -51,12 +51,12 @@ func (i *Invoice) FromFormData(form *url.Values) {
 // InvoiceUpdate is the request body for updating an existing invoice
 // Some Invoice fields cannot be updated
 type InvoiceUpdate struct {
-	FileHash   string     `json:"fileHash"` // cannot be updated, used as identifier
-	ID         *string    `json:"id"`
-	Date       *time.Time `json:"date"`
-	Amount     *float64   `json:"amount"`
-	IsPaid     *bool      `json:"isPaid"`
-	IsReviewed *bool      `json:"isReviewed"`
+	FileHash   string   `json:"fileHash"` // cannot be updated, used as identifier
+	ID         *string  `json:"id"`
+	Date       FormDate `json:"date"`
+	Amount     *float64 `json:"amount"`
+	IsPaid     *bool    `json:"isPaid"`
+	IsReviewed *bool    `json:"isReviewed"`
 }
 
 func (iu *InvoiceUpdate) ToInvoice() *Invoice {

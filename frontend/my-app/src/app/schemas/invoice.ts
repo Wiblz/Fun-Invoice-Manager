@@ -5,7 +5,7 @@ import { fileSchema } from "@/app/schemas/file";
 const baseInvoiceSchema = z.object({
   id: z.string().optional(),
   date: z.string().optional(),
-  amount: z.string().optional(),
+  amount: z.number().optional(),
   isPaid: z.boolean().optional(),
   isReviewed: z.boolean().optional(),
 });

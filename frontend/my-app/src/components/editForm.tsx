@@ -6,19 +6,17 @@ import InvoiceForm from "@/components/InvoiceForm";
 import { updateInvoice } from "@/lib/api";
 import { toast } from "@/hooks/use-toast";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { useEffect } from "react";
 
 export default function EditForm({ hash }: { hash: string }) {
   const { data: invoice, isLoading } = useInvoice(hash);
   const { mutate } = useInvoices();
 
-  useEffect(() => {
-    console.log(invoice);
-  });
-
   const onSubmit = async (data: EditInvoiceFormData) => {
     try {
-      updateInvoice(mutate, data);
+      updateInvoice(mutate, {
+        ...data,
+        fileHash: hash,
+      });
     } catch {
       toast({
         title: "Error",

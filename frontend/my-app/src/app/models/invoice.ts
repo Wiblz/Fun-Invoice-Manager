@@ -3,7 +3,7 @@ export default interface Invoice {
   originalFileName: string;
   id: string;
   date: string;
-  amount: string;
+  amount: number;
   isPaid: boolean;
   isReviewed: boolean;
   fileExists: boolean;
