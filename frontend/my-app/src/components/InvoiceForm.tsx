@@ -136,7 +136,7 @@ export default function InvoiceForm<T extends BaseInvoiceFormData>({
               <FormItem>
                 <FormLabel>Invoice Number</FormLabel>
                 <FormControl>
-                  <Input id="invoiceNumber" {...field} />
+                  <Input {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -150,7 +150,7 @@ export default function InvoiceForm<T extends BaseInvoiceFormData>({
               <FormItem>
                 <FormLabel>Date</FormLabel>
                 <FormControl>
-                  <Input id="date" type="date" {...field} />
+                  <Input type="date" {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -164,7 +164,7 @@ export default function InvoiceForm<T extends BaseInvoiceFormData>({
               <FormItem>
                 <FormLabel>Amount</FormLabel>
                 <FormControl>
-                  <Input id="amount" type="number" {...field} />
+                  <Input type="number" {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -176,16 +176,13 @@ export default function InvoiceForm<T extends BaseInvoiceFormData>({
 
           <div className="flex flex-col space-y-2">
             <FormField
-              name="paid"
+              name="isPaid"
               control={control}
               render={({ field }) => (
                 <FormItem className="flex items-center space-x-2">
-                  <FormLabel htmlFor="paid" className="text-base">
-                    Mark as Paid
-                  </FormLabel>
+                  <FormLabel className="text-base">Mark as Paid</FormLabel>
                   <FormControl>
                     <Switch
-                      id="paid"
                       checked={field.value}
                       onCheckedChange={(checked) => field.onChange(checked)}
                       className="data-[state=checked]:bg-green-800 data-[state=unchecked]:bg-red-700"
@@ -196,16 +193,13 @@ export default function InvoiceForm<T extends BaseInvoiceFormData>({
             />
 
             <FormField
-              name="reviewed"
+              name="isReviewed"
               control={control}
               render={({ field }) => (
                 <FormItem className="flex items-center space-x-2">
-                  <FormLabel htmlFor="reviewed" className="text-base">
-                    Mark as Reviewed
-                  </FormLabel>
+                  <FormLabel className="text-base">Mark as Reviewed</FormLabel>
                   <FormControl>
                     <Switch
-                      id="reviewed"
                       checked={field.value}
                       onCheckedChange={(checked) => field.onChange(checked)}
                       className="data-[state=checked]:bg-green-800 data-[state=unchecked]:bg-red-700"

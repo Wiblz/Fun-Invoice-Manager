@@ -12,8 +12,8 @@ type Invoice struct {
 	ID               *string  `json:"id"` // not an id in database sense, just to cover invoice "numbers" with any characters
 	Date             FormDate `json:"date"`
 	Amount           *float64 `json:"amount"`
-	IsPaid           bool     `json:"isPaid"`
-	IsReviewed       bool     `json:"isReviewed"`
+	IsPaid           *bool    `json:"isPaid"`
+	IsReviewed       *bool    `json:"isReviewed"`
 	RawText          string   `json:"-"`
 	FileExists       bool     `json:"fileExists"` // if the file is stored in filestore
 }
@@ -39,12 +39,12 @@ func (i *Invoice) FromFormData(form *url.Values) {
 
 	isPaid, err := strconv.ParseBool(form.Get("isPaid"))
 	if err == nil {
-		i.IsPaid = isPaid
+		i.IsPaid = &isPaid
 	}
 
 	isReviewed, err := strconv.ParseBool(form.Get("isReviewed"))
 	if err == nil {
-		i.IsReviewed = isReviewed
+		i.IsReviewed = &isReviewed
 	}
 }
 
@@ -68,11 +68,11 @@ func (iu *InvoiceUpdate) ToInvoice() *Invoice {
 	}
 
 	if iu.IsPaid != nil {
-		invoice.IsPaid = *iu.IsPaid
+		invoice.IsPaid = iu.IsPaid
 	}
 
 	if iu.IsReviewed != nil {
-		invoice.IsReviewed = *iu.IsReviewed
+		invoice.IsReviewed = iu.IsReviewed
 	}
 
 	return invoice
