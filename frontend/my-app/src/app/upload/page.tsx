@@ -14,16 +14,7 @@ import { useState } from "react";
 import Invoice from "@/app/models/invoice";
 
 export default function UploadPage() {
-  const [invoice, setInvoice] = useState<Invoice>({
-    id: "",
-    date: new Date().toISOString().split("T")[0],
-    amount: "",
-    isPaid: false,
-    isReviewed: false,
-    fileHash: "",
-    originalFileName: "",
-    fileExists: false,
-  });
+  const [invoice, setInvoice] = useState<Invoice | null>(null);
 
   const onSubmit = async (data: CreateInvoiceFormData) => {
     const formData = new FormData();
@@ -45,7 +36,10 @@ export default function UploadPage() {
   };
 
   const onFileChange = async (file: File | undefined) => {
-    if (!file) return false;
+    if (!file) {
+      setInvoice(null);
+      return true;
+    }
 
     const hash = await calculateFileHash(file);
     const response = await checkFileExists(hash);
@@ -71,9 +65,7 @@ export default function UploadPage() {
       return false;
     }
 
-    if (response.data.invoice) {
-      setInvoice(response.data.invoice);
-    }
+    setInvoice(response.data.invoice ?? null);
 
     return true;
   };

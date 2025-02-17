@@ -44,7 +44,6 @@ export default function EditForm({ hash }: { hash: string }) {
             schema={editInvoiceSchema}
             onSubmit={onSubmit}
             invoice={invoice}
-            isEdit={true}
           />
         </CardContent>
       </Card>

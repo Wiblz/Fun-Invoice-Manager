@@ -20,15 +20,14 @@ import type Invoice from "@/app/models/invoice";
 interface InvoiceFormProps<T extends BaseInvoiceFormData> {
   schema: z.ZodSchema<T>;
   onSubmit: SubmitHandler<T>;
-  invoice: Invoice;
+  invoice: Invoice | null;
   onFileChange?: (file: File | undefined) => Promise<boolean>;
-  isEdit?: boolean;
 }
 
 const placeholderInvoice: Invoice = {
   id: "",
   date: new Date().toISOString().split("T")[0],
-  amount: "",
+  amount: 0,
   isPaid: false,
   isReviewed: false,
   fileHash: "",
@@ -41,7 +40,6 @@ export default function InvoiceForm<T extends BaseInvoiceFormData>({
   onSubmit,
   invoice,
   onFileChange,
-  isEdit = false,
 }: InvoiceFormProps<T>) {
   const form = useForm<T>({
     resolver: zodResolver(schema),
@@ -53,7 +51,16 @@ export default function InvoiceForm<T extends BaseInvoiceFormData>({
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    reset(invoice);
+    console.log("resetting form", invoice);
+    // iterate over the keys of T and reset them individually, except for the file field
+    for (const key in form.getValues()) {
+      if (key === "invoice") continue;
+      if (invoice?.[key as keyof Invoice]) {
+        form.setValue(key as keyof T, invoice[key as keyof Invoice]);
+      } else {
+        form.resetField(key as keyof T);
+      }
+    }
   }, [invoice, reset]);
 
   const clearSelection = (field: ControllerRenderProps<T, "invoice">) => {
@@ -68,11 +75,13 @@ export default function InvoiceForm<T extends BaseInvoiceFormData>({
   return (
     <Form {...form}>
       <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
-        {!isEdit && (
+        {onFileChange && (
           <FormField
             name="invoice"
             control={control}
             render={({ field }) => {
+              const file = form.watch("invoice");
+
               return (
                 <FormItem>
                   <FormControl>
@@ -102,16 +111,19 @@ export default function InvoiceForm<T extends BaseInvoiceFormData>({
                           });
                         }}
                       />
-                      {field.value && (
+                      {file && (
                         <div className="flex items-center gap-2 text-sm">
                           <FileCheck className="w-4 h-4 text-green-800" />
                           <span className="text-gray-600">
-                            {(field.value as File).name}
+                            {(file as File).name}
                           </span>
                           <Button
                             variant="ghost"
                             size="icon"
-                            onClick={() => clearSelection(field)}
+                            onClick={() => {
+                              onFileChange();
+                              clearSelection(field);
+                            }}
                             className="p-1 hover:bg-gray-100 rounded-full"
                             aria-label="Clear selection"
                           >
@@ -212,10 +224,8 @@ export default function InvoiceForm<T extends BaseInvoiceFormData>({
         </div>
 
         <div className="flex items-center gap-4 mt-4">
-          <Button type="submit">
-            {isEdit || isUpdating ? "Update" : "Create"}
-          </Button>
-          {((isEdit && invoice?.fileExists === "false") || isUpdating) && (
+          <Button type="submit">{invoice ? "Update" : "Create"}</Button>
+          {invoice && onFileChange && (
             <span className="text-sm text-gray-600">
               File for this invoice is missing, uploading it will fix this
             </span>
