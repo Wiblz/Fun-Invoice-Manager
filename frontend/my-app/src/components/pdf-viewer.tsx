@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { X } from "lucide-react";
+import { Card, CardContent, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 
 export default function PdfViewer({
   fileName,
@@ -29,15 +31,21 @@ export default function PdfViewer({
   }, [fileName]);
 
   return (
-    <div className="relative h-full w-full bg-white p-4">
-      <button className="absolute top-4 right-4" onClick={onClose}>
-        <X className="w-6 h-6 text-white" />
-      </button>
-      {!fileLink ? (
-        <p>Loading...</p>
-      ) : (
-        <iframe src={fileLink} className="w-full h-96 border" />
-      )}
-    </div>
+    <Card>
+      <CardTitle className="flex justify-end pt-2 pr-2">
+        <Button variant="ghost" onClick={onClose}>
+          <X className="w-6 h-6 text-neutral-500" />
+        </Button>
+      </CardTitle>
+      <CardContent className="">
+        <div className="h-full w-full bg-white p-4">
+          {!fileLink ? (
+            <p>Loading...</p>
+          ) : (
+            <iframe src={fileLink} className="w-full h-96 border" />
+          )}
+        </div>
+      </CardContent>
+    </Card>
   );
 }

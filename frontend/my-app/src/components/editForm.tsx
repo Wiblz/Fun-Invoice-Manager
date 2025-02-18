@@ -8,7 +8,7 @@ import { toast } from "@/hooks/use-toast";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 
 export default function EditForm({ hash }: { hash: string }) {
-  const { data: invoice, isLoading } = useInvoice(hash);
+  const { data: invoice } = useInvoice(hash);
   const { mutate } = useInvoices();
 
   const onSubmit = async (data: EditInvoiceFormData) => {
