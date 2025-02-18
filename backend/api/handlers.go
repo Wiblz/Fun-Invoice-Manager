@@ -247,6 +247,8 @@ func (s *Server) FileUploadHandler(w http.ResponseWriter, r *http.Request) {
 		text += pageText
 	}
 
+	invoice := &model.Invoice{}
+
 	if s.llm != nil {
 		ctx := r.Context()
 		prompt := fmt.Sprintf(llmPromptTemplate, text)
@@ -256,28 +258,19 @@ func (s *Server) FileUploadHandler(w http.ResponseWriter, r *http.Request) {
 		} else {
 			s.logger.Info("LLM response", zap.String("response", response))
 			// try to unmarshal the response into a map
-			var responseMap map[string]interface{}
-			err = json.Unmarshal([]byte(response), &responseMap)
+			err = json.Unmarshal([]byte(response), &invoice)
 			if err != nil {
 				s.logger.Warn("Failed to unmarshal LLM response", zap.Error(err))
 			} else {
-				// extract the fields from the response
-				id, idPresent := responseMap["id"]
-				date, datePresent := responseMap["date"]
-				amount, amountPresent := responseMap["amount"]
-				if idPresent && datePresent && amountPresent {
-					s.logger.Info("Extracted fields from LLM response", zap.String("id", id.(string)), zap.String("date", date.(string)), zap.Float64("amount", amount.(float64)))
-				}
+				s.logger.Info("Extracted fields from LLM response", zap.Any("invoice", invoice))
 			}
 		}
 	}
 
-	invoice := &model.Invoice{
-		FileHash:         fmt.Sprintf("%x", hash.Sum(nil)),
-		OriginalFileName: header.Filename,
-		RawText:          text,
-		FileExists:       true,
-	}
+	invoice.FileHash = fmt.Sprintf("%x", hash.Sum(nil))
+	invoice.OriginalFileName = header.Filename
+	invoice.RawText = text
+	invoice.FileExists = true
 
 	err = r.ParseMultipartForm(0)
 	if err != nil {
