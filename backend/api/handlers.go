@@ -17,7 +17,7 @@ import (
 const (
 	// Max file size in bytes
 	maxFileSize       = 10 * 1024 * 1024
-	llmPromptTemplate = `Extract the invoice number (aliased as "id"), date (formatted YYYY-MM-DD), and total amount from the following text. Your answer MUST contain ONLY a JSON response of a following format:
+	llmPromptTemplate = `Extract the invoice number (aliased as "id"), date (formatted YYYY-MM-DD), and total amount from the following text. Fields are optional, set to null if not found in text. Your answer MUST contain ONLY a JSON response of a following format:
 	{
 		"id": "123456",
 		"date": "2021-01-01",
