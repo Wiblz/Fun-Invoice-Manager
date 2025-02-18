@@ -49,11 +49,10 @@ export default function InvoiceForm<T extends BaseInvoiceFormData>({
   });
 
   const { control, reset, handleSubmit } = form;
-  const [isUpdating, setUpdating] = useState(false);
+  const [, setUpdating] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    console.log("resetting form", invoice);
     // iterate over the keys of T and reset them individually, except for the file field
     for (const key in form.getValues()) {
       if (key === "invoice") continue;
