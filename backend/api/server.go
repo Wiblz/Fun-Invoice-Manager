@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/Wiblz/Fun-Invoice-Manager/backend/storage/filestore"
+	"github.com/tmc/langchaingo/llms/openai"
 	"go.uber.org/zap"
 	"maps"
 	"net/http"
@@ -19,6 +20,7 @@ type Server struct {
 	storageManager  *db.Manager
 	router          *mux.Router
 	filestoreClient *filestore.Client
+	llm             *openai.LLM
 
 	logger *zap.Logger
 }
@@ -103,10 +105,11 @@ func (s *Server) corsMiddleware(next http.Handler) http.Handler {
 	})
 }
 
-func NewServer(storageManager *db.Manager, filestoreClient *filestore.Client, logger *zap.Logger) *Server {
+func NewServer(storageManager *db.Manager, filestoreClient *filestore.Client, llm *openai.LLM, logger *zap.Logger) *Server {
 	s := &Server{
 		storageManager:  storageManager,
 		filestoreClient: filestoreClient,
+		llm:             llm,
 		logger:          logger,
 	}
 

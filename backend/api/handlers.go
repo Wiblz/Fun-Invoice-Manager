@@ -7,6 +7,7 @@ import (
 	"github.com/Wiblz/Fun-Invoice-Manager/backend/model"
 	"github.com/gen2brain/go-fitz"
 	"github.com/gorilla/mux"
+	"github.com/tmc/langchaingo/llms"
 	"go.uber.org/zap"
 	"io"
 	"net/http"
@@ -15,7 +16,15 @@ import (
 
 const (
 	// Max file size in bytes
-	maxFileSize = 10 * 1024 * 1024
+	maxFileSize       = 10 * 1024 * 1024
+	llmPromptTemplate = `Extract the invoice number (aliased as "id"), date (formatted YYYY-MM-DD), and total amount from the following text. Your answer MUST contain ONLY a JSON response of a following format:
+	{
+		"id": "123456",
+		"date": "2021-01-01",
+		"amount": 123.45
+	}
+	
+	Text: %s`
 )
 
 func (s *Server) GetAllInvoicesHandler(w http.ResponseWriter, _ *http.Request) {
@@ -236,6 +245,31 @@ func (s *Server) FileUploadHandler(w http.ResponseWriter, r *http.Request) {
 		}
 
 		text += pageText
+	}
+
+	if s.llm != nil {
+		ctx := r.Context()
+		prompt := fmt.Sprintf(llmPromptTemplate, text)
+		response, err := s.llm.Call(ctx, prompt, llms.WithJSONMode())
+		if err != nil {
+			s.logger.Warn("Failed to process text with LLM", zap.Error(err))
+		} else {
+			s.logger.Info("LLM response", zap.String("response", response))
+			// try to unmarshal the response into a map
+			var responseMap map[string]interface{}
+			err = json.Unmarshal([]byte(response), &responseMap)
+			if err != nil {
+				s.logger.Warn("Failed to unmarshal LLM response", zap.Error(err))
+			} else {
+				// extract the fields from the response
+				id, idPresent := responseMap["id"]
+				date, datePresent := responseMap["date"]
+				amount, amountPresent := responseMap["amount"]
+				if idPresent && datePresent && amountPresent {
+					s.logger.Info("Extracted fields from LLM response", zap.String("id", id.(string)), zap.String("date", date.(string)), zap.Float64("amount", amount.(float64)))
+				}
+			}
+		}
 	}
 
 	invoice := &model.Invoice{

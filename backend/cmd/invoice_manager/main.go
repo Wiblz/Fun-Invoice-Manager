@@ -13,6 +13,7 @@ import (
 
 	"github.com/Wiblz/Fun-Invoice-Manager/backend/api"
 	"github.com/spf13/viper"
+	"github.com/tmc/langchaingo/llms/openai"
 )
 
 const (
@@ -66,6 +67,22 @@ func main() {
 	logger := newLogger(production, debug, logPath)
 	defer logger.Sync()
 
+	var llm *openai.LLM
+	groqApiKey := config.GetString("GROQ_API_KEY")
+	if groqApiKey != "" {
+		llm, err = openai.New(
+			openai.WithModel("llama3-8b-8192"),
+			openai.WithResponseFormat(openai.ResponseFormatJSON),
+			openai.WithBaseURL("https://api.groq.com/openai/v1"),
+			openai.WithToken(groqApiKey),
+		)
+		if err != nil {
+			logger.Warn("Failed to create LLM client, invoices will not be processed by LLM", zap.Error(err))
+		}
+	} else {
+		logger.Warn("GROQ_API_KEY not set, invoices will not be processed by LLM")
+	}
+
 	sqliteFile := config.GetString("SQLITE_FILE")
 	if sqliteFile == "" {
 		config.Set("SQLITE_FILE", defaultSQLiteFile)
@@ -81,7 +98,7 @@ func main() {
 		logger.Fatal("Failed to create filestore client", zap.Error(err))
 	}
 
-	s := api.NewServer(storageManager, filestoreClient, logger)
+	s := api.NewServer(storageManager, filestoreClient, llm, logger)
 	s.SyncFilestore()
 	go s.Run()
 
